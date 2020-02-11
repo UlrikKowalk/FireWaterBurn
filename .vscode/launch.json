@@ -1,0 +1,49 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Debug (Launch) - Current File",
+            "request": "launch",
+            "mainClass": "TestClass"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-InplaceFFT<Java_72da403b>",
+            "request": "launch",
+            "mainClass": "InplaceFFT",
+            "projectName": "Java_72da403b"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-TestClass<Java_72da403b>",
+            "request": "launch",
+            "mainClass": "TestClass",
+            "projectName": "Java_72da403b"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-ReadExample<Java_72da403b>",
+            "request": "launch",
+            "mainClass": "WavFile.ReadExample",
+            "projectName": "Java_72da403b"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-WavFile<Java_72da403b>",
+            "request": "launch",
+            "mainClass": "WavFile.WavFile",
+            "projectName": "Java_72da403b"
+        },
+        {
+            "type": "java",
+            "name": "Debug (Launch)-WriteExample<Java_72da403b>",
+            "request": "launch",
+            "mainClass": "WavFile.WriteExample",
+            "projectName": "Java_72da403b"
+        }
+    ]
+}
