@@ -4,7 +4,7 @@ class TestClass {
 
     public static void main(String[] args) {
 
-        String filename = "D:/Java/media/45_2_Milbe.wav";
+        String filename = "D:/Java/media/45_8_Milbe.wav";
         OpenWaveFile wave = new OpenWaveFile(filename);
         wave.open();
 
@@ -12,6 +12,7 @@ class TestClass {
         
         int blocksize = 1024;
         double overlap = 0.0;
+
 
         Localisation localisation = new Localisation();
 
