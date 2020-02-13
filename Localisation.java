@@ -27,7 +27,7 @@ class Localisation {
 
     }
 
-    public void performExperiment(double[][] audioData, int samplerate, int blocksize, double overlap) {
+    public double[] performExperiment(double[][] audioData, int samplerate, int blocksize, double overlap) {
 
         this.sensors = audioData.length;
         this.samplerate = samplerate;
@@ -35,18 +35,19 @@ class Localisation {
         this.nLowerBin = 0;
         this.nUpperBin = (int) (blocksize / 2 + 1);
         this.blocklen_half = (int) (blocksize / 2 + 1);
-        this.alpha = 0.9;
+        this.alpha = 0.9f;
         this.oneMinusAlpha = 1.0f - this.alpha;
         this.alphaCpx = new Complex(this.alpha, 0);
         this.oneMinusAlphaCpx = new Complex((1 - this.alpha), 0);
 
         this.coordinates = establishCoordinates();
 
-        double[] estimated_doa = estimateDoa(audioData, samplerate, coordinates, blocksize, overlap);
+        double[] result = estimateDoa(audioData, samplerate, coordinates, blocksize, overlap);
 
-        for (int iAngle = 0; iAngle < estimated_doa.length; iAngle++) {
-            System.out.println("Angle: " + estimated_doa[iAngle]);
-        }
+        ResultWriter resultWriter = new ResultWriter("threshold.txt");
+        resultWriter.write(result);
+
+        return result;
 
         // # todo: check shape
         // for azimuth in all_azimuth:
@@ -149,6 +150,7 @@ class Localisation {
                 }
             }
         }
+        int i = 0;
     }
 
     private Complex[][] getSteeringVector(int iTheta) {
@@ -267,10 +269,16 @@ class Localisation {
         int num_blocks = (int) Math.floor((length - blocksize) / hopsize);
         double[] window = hann(blocksize);
 
-        int num_theta = 180;
+        int max_theta = 180;
+        int step_theta = 10;
+        int num_theta = (int)(max_theta/step_theta);
         double theta[] = new double[num_theta];
-        for (int iTheta = 0; iTheta < num_theta; iTheta++) {
-            theta[iTheta] = 2 * Math.PI * iTheta / (num_theta);
+        int idxTheta = 0;
+        int idx = 0;
+        while (idxTheta < max_theta) {
+            theta[idx] = 2 * Math.PI * idxTheta / 360f;
+            idx++;
+            idxTheta += step_theta;
         }
         
         double samplerateDividedByBlocksize = (double) samplerate / blocksize;
@@ -369,7 +377,7 @@ class Localisation {
 
             for (int iTheta = 0; iTheta < num_theta; iTheta++) {
 
-                
+                nP = 0;
 
                 //double n_theta = theta[iTheta];
 
@@ -399,8 +407,8 @@ class Localisation {
                     for (int iRow = 0; iRow < this.sensors; iRow++) {
                         for (int iCol = 0; iCol < this.sensors; iCol++) {
 
-                            eyeTimesTraceMinusPSD[iRow][iCol].re = eyeTimesTraceMinusPSD[iRow][iCol].re - this.psd[iRow][iCol][iBin].re;
-                            eyeTimesTraceMinusPSD[iRow][iCol].im = eyeTimesTraceMinusPSD[iRow][iCol].im - this.psd[iRow][iCol][iBin].im;
+                            eyeTimesTraceMinusPSD[iRow][iCol].re -= this.psd[iRow][iCol][iBin].re;
+                            eyeTimesTraceMinusPSD[iRow][iCol].im -= this.psd[iRow][iCol][iBin].im;
 
                             //eyeTimesTraceMinusPSD[iRow][iCol] = eyeTimesTraceMinusPSD[iRow][iCol]
                             //        .minus(psd[iRow][iCol][iBin]);
@@ -417,10 +425,10 @@ class Localisation {
                         for (int iCol = 0; iCol < this.sensors; iCol++) {
                             //tmp[iRow] = tmp[iRow].plus(vectorA[iCol][iBin].times(eyeTimesTraceMinusPSD[iRow][iCol]));
 
-                            tmp[iRow].re += (vectorA[iCol][iBin].re*eyeTimesTraceMinusPSD[iRow][iCol].re - 
-                                                vectorA[iCol][iBin].im*eyeTimesTraceMinusPSD[iRow][iCol].im); 
-                            tmp[iRow].im += (vectorA[iCol][iBin].re*eyeTimesTraceMinusPSD[iRow][iCol].im + 
-                                                vectorA[iCol][iBin].im*eyeTimesTraceMinusPSD[iRow][iCol].re); 
+                            tmp[iRow].re += (eyeTimesTraceMinusPSD[iRow][iCol].re * vectorA[iCol][iBin].re - 
+                                                eyeTimesTraceMinusPSD[iRow][iCol].im * vectorA[iCol][iBin].im); 
+                            tmp[iRow].im += (eyeTimesTraceMinusPSD[iRow][iCol].im * vectorA[iCol][iBin].re + 
+                                                eyeTimesTraceMinusPSD[iRow][iCol].re * vectorA[iCol][iBin].im); 
                         }
                     }
 
@@ -429,10 +437,10 @@ class Localisation {
                         for (int iCol = 0; iCol < this.sensors; iCol++) {
 
                             //tmp2 += (vectorA[iCol][iRow].times(tmp[iRow])).abs();
-                            tmp2 += Math.sqrt(Math.pow(vectorA[iCol][iBin].re*tmp[iRow].re - 
+                            tmp2 += Math.pow(vectorA[iCol][iBin].re*tmp[iRow].re - 
                                 vectorA[iCol][iBin].im*tmp[iRow].im, 2) + 
                                 Math.pow(vectorA[iCol][iBin].re*tmp[iRow].im + 
-                                vectorA[iCol][iBin].im*tmp[iRow].re, 2)); 
+                                vectorA[iCol][iBin].im*tmp[iRow].re, 2); 
 // SQRT needed?
                         }
                     }

@@ -10,11 +10,13 @@ class TestClass {
 
         print("Channels: " + wave.getNumChannels() + ", Length: " + wave.getLength() + ", Samplerate: " + wave.getSampleRate());
         
-        int blocksize = 1024;
+        int blocksize = 256;
         double overlap = 0.0;
 
 
         Localisation localisation = new Localisation();
+
+        
 
         int nRuns = 1;
 
@@ -29,7 +31,7 @@ class TestClass {
         long duration = (endTime - startTime)/nRuns; 
         print("Execution took " + duration/1e6 + "ms");
 
-
+        
 
 
     }
