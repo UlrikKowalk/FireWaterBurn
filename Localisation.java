@@ -45,7 +45,9 @@ class Localisation {
         double[] result = estimateDoa(audioData, samplerate, coordinates, blocksize, overlap);
 
         ResultWriter resultWriter = new ResultWriter("threshold.txt");
-        resultWriter.write(result);
+        for (int iBlock = 0; iBlock < result.length; iBlock++) {
+            resultWriter.write(result[iBlock]);
+        }
 
         return result;
 
@@ -92,8 +94,8 @@ class Localisation {
 
         for (int iSensor = 1; iSensor < this.sensors; iSensor++) {
             omega = -2f * Math.PI * (iSensor - 1) / (this.sensors - 1) - Math.PI;
-            coordinates[iSensor][0] = Math.PI * Math.cos(omega);
-            coordinates[iSensor][1] = Math.PI * Math.sin(omega);
+            coordinates[iSensor][0] = Math.PI * Math.cos(omega) * 0.01;
+            coordinates[iSensor][1] = Math.PI * Math.sin(omega) * 0.01;
             coordinates[iSensor][2] = 0;
         }
 
@@ -150,7 +152,6 @@ class Localisation {
                 }
             }
         }
-        int i = 0;
     }
 
     private Complex[][] getSteeringVector(int iTheta) {
@@ -309,6 +310,8 @@ class Localisation {
         File file = new File(filename);
         file.delete();
 
+        double[][] mAbs_sum = new double[num_blocks][num_theta];
+
         for (int iBlock = 0; iBlock < num_blocks; iBlock++) {
 
             idx_in = (int) (iBlock * hopsize);
@@ -437,18 +440,20 @@ class Localisation {
                         for (int iCol = 0; iCol < this.sensors; iCol++) {
 
                             //tmp2 += (vectorA[iCol][iRow].times(tmp[iRow])).abs();
-                            tmp2 += Math.pow(vectorA[iCol][iBin].re*tmp[iRow].re - 
+                            tmp2 += Math.sqrt(Math.pow(vectorA[iCol][iBin].re*tmp[iRow].re - 
                                 vectorA[iCol][iBin].im*tmp[iRow].im, 2) + 
                                 Math.pow(vectorA[iCol][iBin].re*tmp[iRow].im + 
-                                vectorA[iCol][iBin].im*tmp[iRow].re, 2); 
+                                vectorA[iCol][iBin].im*tmp[iRow].re, 2)); 
 // SQRT needed?
                         }
                     }
 
-                    nP += 1f / tmp2;
+                    // Power summation over all (interesting) bins
+                    nP += tmp2;
                 }
-                // Power summation over all (interesting) bins
-                v_P_abs_sum[iTheta] = nP;
+                
+                v_P_abs_sum[iTheta] = 1f / nP;
+                mAbs_sum[iBlock][iTheta] = 1f / nP;
 
             }
 
