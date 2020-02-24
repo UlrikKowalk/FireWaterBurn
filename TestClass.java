@@ -4,7 +4,7 @@ class TestClass {
 
     public static void main(String[] args) {
 
-        String filename = "D:/Java/media/45_8_Milbe.wav";
+        String filename = "D:/Java/media/0_recording_joined.wav";
         OpenWaveFile wave = new OpenWaveFile(filename);
         wave.open();
 
@@ -23,16 +23,16 @@ class TestClass {
         long startTime = System.nanoTime();
 
         //for (int iRun = 0; iRun < nRuns; iRun++) {
-            double[] vResult = localisation.performExperiment(wave.returnAudio(), wave.getSampleRate(), blocksize, overlap);
+            double[][] vResult = localisation.performExperiment(wave.returnAudio(), wave.getSampleRate(), blocksize, overlap);
         //}
 
         long endTime = System.nanoTime();
 
         long duration = (endTime - startTime)/nRuns; 
         
-        for (int iRes = 0; iRes < vResult.length; iRes++) {
-            print(" " + vResult[iRes] / Math.PI * 180);
-        }
+        /*for (int iRes = 0; iRes < vResult.length; iRes++) {
+            print(" " + vResult[iRes] / Math.PI * 180f);
+        }*/
         
         print("Execution took " + duration/1e6 + "ms");
 
