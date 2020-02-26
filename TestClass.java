@@ -4,7 +4,7 @@ class TestClass {
 
     public static void main(String[] args) {
 
-        String filename = "D:/Java/media/0_recording_joined.wav";
+        String filename = "media/0_recording_joined.wav";
         OpenWaveFile wave = new OpenWaveFile(filename);
         wave.open();
 
@@ -23,7 +23,7 @@ class TestClass {
         long startTime = System.nanoTime();
 
         //for (int iRun = 0; iRun < nRuns; iRun++) {
-            double[][] vResult = localisation.performExperiment(wave.returnAudio(), wave.getSampleRate(), blocksize, overlap);
+            double[][] vResult = localisation.runExperiment(wave.returnAudio(), wave.getSampleRate(), blocksize, overlap);
         //}
 
         long endTime = System.nanoTime();
