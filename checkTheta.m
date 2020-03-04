@@ -30,6 +30,8 @@ vLoudness = zeros(nBlocks, 1);
 hFig2 = figure();
 hold on;
 
+% nBlocks = 20;
+
 for iBlock = 1 : nBlocks
    
     vLoudness(iBlock) = rms(a(:, iBlock));
@@ -54,11 +56,11 @@ for iBlock = 1 : nBlocks
             vLocationsPrev(iLoc) = stSourcesPrev(iLoc).Theta;
         end
     
-        for iLoc = 1 : size(loc)
+        for iLoc = 1 : size(loc, 1)
            
-            vDistance = abs(vLocationsPrev - loc(iLoc))
+            vDistance = abs(vLocationsPrev - loc(iLoc));
             [~, arg] = min(vDistance);
-            if arg <= nDistanceLimit
+            if vDistance(arg) <= nDistanceLimit
                 stSources(iLoc).Theta = loc(iLoc);
                 stSources(iLoc).Magnitude = mag(iLoc);
                 stSources(iLoc).State = 1;
@@ -100,6 +102,8 @@ for iBlock = 1 : nBlocks
                 plot(iBlock, stSources(iSource).Theta, 'bx');
         end
     end
+    
+%     drawnow;
     
     
 end
