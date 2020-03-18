@@ -2,6 +2,8 @@ clear;
 close all;
 clc;
 
+bQuad = true;
+
 % STATES: 0: new, 1: alive, 2: dying
 
 sFilename = 'threshold.txt';
@@ -24,19 +26,34 @@ vTime = (1:length(vSignal))/nFs;
 stSources = struct('Theta', [],'Magnitude', [], 'State', []);
 
 nPeaks = 5;
-nDistanceLimit = 1;
+nDistanceLimit = 0.3;
 vLoudness = zeros(nBlocks, 1);
 
 hFig2 = figure();
 hold on;
 
+tic;
+
 % nBlocks = 20;
 
 for iBlock = 1 : nBlocks
    
-    vLoudness(iBlock) = rms(a(:, iBlock));
-    a(:, iBlock) = a(:, iBlock) / max(abs(a(:, iBlock)));
-    [mag, loc] = findpeaks(abs(a(:, iBlock)), 'NPeaks', nPeaks);
+    vBlock = abs(a(:, iBlock));
+    vLoudness(iBlock) = rms(vBlock);
+    vBlock = vBlock / max(vBlock);
+    
+    [mag, loc] = findpeaks(vBlock, 'NPeaks', nPeaks);
+    
+    if bQuad
+        for iLoc = 1:length(loc)
+            if (loc(iLoc) > 1)
+                [p,y] = quadraticInterpolation(vBlock(loc(iLoc)-1), ...
+                    vBlock(loc(iLoc)),vBlock(loc(iLoc)+1));
+                mag(iLoc) = y;
+                loc(iLoc) = loc(iLoc) + p;
+            end
+        end
+    end
     
     if iBlock == 1
         
@@ -49,6 +66,15 @@ for iBlock = 1 : nBlocks
     else
         
         stSourcesPrev = stSources;
+        
+        vErase = [];
+        for iSource = 1 : length(stSources)
+            if (stSources(iSource).State == 2)
+                vErase(end+1) = iSource;
+            end
+        end
+        stSources(vErase) = [];
+        
        
         vLocationsPrev = zeros(size(stSourcesPrev, 2), 1);
         
@@ -72,24 +98,20 @@ for iBlock = 1 : nBlocks
             
         end
         
-%         for iLocPrev = 1 : size(stSourcesPrev, 2)
-%            
-%             vDistance = abs(loc - stSourcesPrev(iLocPrev).Theta);
-%             [~, arg] = min(vDistance);
-%             if arg > nDistanceLimit
-%                 stSources(end+1).Theta = stSourcesPrev(iLocPrev).Theta;
-%                 stSources(end+1).Magnitude = stSourcesPrev(iLocPrev).Magnitude;
-%                 stSources(end+1).State = 2;
-%             else 
-%                 fprintf('EXCEPTION\n');
-%             end
-%             
-%         end
-        
-        
-        
-
-        
+        for iLocPrev = 1 : size(stSourcesPrev, 2)
+           
+            vDistance = abs(loc - stSourcesPrev(iLocPrev).Theta);
+            [~, arg] = min(vDistance);
+            if arg > nDistanceLimit
+                stSources(end+1).Theta = stSourcesPrev(iLocPrev).Theta;
+                stSources(end+1).Magnitude = stSourcesPrev(iLocPrev).Magnitude;
+                stSources(end+1).State = 2;
+            else 
+                fprintf('EXCEPTION\n');
+            end
+            
+        end
+          
     end
     
     for iSource = 1 : size(stSources, 2)
@@ -151,6 +173,7 @@ hold off;
 
 
 fprintf('Done.\n');
+toc;
 
 
 % colorbar;

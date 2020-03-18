@@ -22,9 +22,9 @@ class TestClass {
 
         long startTime = System.nanoTime();
 
-        //for (int iRun = 0; iRun < nRuns; iRun++) {
-            double[][] vResult = localisation.runExperiment(wave.returnAudio(), wave.getSampleRate(), blocksize, overlap);
-        //}
+
+        double[][] vResult = localisation.runExperiment(wave.returnAudio(), wave.getSampleRate(), blocksize, overlap);
+   
 
         long endTime = System.nanoTime();
 

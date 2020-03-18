@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "CodeLens (Launch) - TestPeakFind",
+            "request": "launch",
+            "mainClass": "TestPeakFind",
+            "projectName": "VIWER_TheHouseIsOnFire_82fb4e7a"
+        },
+        {
+            "type": "java",
             "name": "Debug (Launch) - Current File",
             "request": "launch",
             "mainClass": "TestClass"
