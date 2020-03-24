@@ -72,11 +72,11 @@ for iBlock = 1 : nBlocks
     end
     
     
-    aKal(1).iterate(mPeaksMat(1));
-    aKal(2).iterate(mPeaksMat(2));
-    
-    mKalOut(iBlock, 1) = aKal(1).getData();
-    mKalOut(iBlock, 2) = aKal(2).getData();
+%     aKal(1).iterate(mPeaksMat(1));
+%     aKal(2).iterate(mPeaksMat(2));
+%     
+%     mKalOut(iBlock, 1) = aKal(1).getData();
+%     mKalOut(iBlock, 2) = aKal(2).getData();
 
 %     
 %     if iBlock == 1

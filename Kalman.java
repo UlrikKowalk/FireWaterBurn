@@ -4,17 +4,16 @@ import java.util.*;
 class Kalman {
 
     private static int numSources = 0;
-    private final static int NUMBLOCKSTILLDEATH = 10;
+    private final static int NUMSECONDSTILLDEATH = 5;
 
     private int numBlocksRemaining;
 
-    private boolean bFirstBlock = true;
     private double dt;
-    private double nObservationError = 10*1e-3f;
+    private double nObservationError = 1e-3f;
     private double nObservation;
 
     private double[] vKalmanGain = {0.0f, 0.0f};
-    private double[] vEstimate = {0.0f, 0.5f};
+    private double[] vEstimate = {0.0f, 0.0f};
     private double[] vH = {1.0f, 0.0f};
 
     private double[][] mA;
@@ -43,7 +42,7 @@ class Kalman {
     }
 
     private void resetRemaining() {
-        this.numBlocksRemaining = NUMBLOCKSTILLDEATH;
+        this.numBlocksRemaining = (int) (NUMSECONDSTILLDEATH / this.dt);
     }
 
     private void decreaseRemaining() {
@@ -59,65 +58,54 @@ class Kalman {
         // Observed State
         makeObservation(nNewMeasurement);
 
-        /*if (this.bFirstBlock) {
+        // State Covariance Update
+        updateStateCovariance();
 
-            this.bFirstBlock = false;
-            this.vEstimate[0] = nObservation;
-            return nObservation;
+        // Kalman Gain
+        calculateKalmanGain();
 
-        } else {*/
+        // Process Error Update
+        updateProcessError();
 
-            // State Covariance Update
-            updateStateCovariance();
+        // Estimation
+        return estimate();
 
-            // Kalman Gain
-            calculateKalmanGain();
-
-            // Process Error Update
-            updateProcessError();
-
-            // Estimation
-            return estimate();
-        
-        //}
     }
 
     private void makeObservation(double nNewMeasurement) {
+
         this.nObservation = nNewMeasurement + this.nObservationError * oRandom.nextGaussian();
+        
     }
 
     private void updateStateCovariance() {
 
-        /*this.mQ[0][0] += oRandom.nextGaussian();
-        this.mQ[0][1] += oRandom.nextGaussian();
-        this.mQ[1][0] += oRandom.nextGaussian();
-        this.mQ[1][1] += oRandom.nextGaussian();*/
-
         this.mStateCovariance = addTwoByTwo(multiplyTwoByTwoTransposed(multiplyTwoByTwo(this.mA, this.mProcessError), this.mA), this.mQ);
+
     }
 
     private void calculateKalmanGain() {
+
         double tmp = (this.mStateCovariance[0][0] + this.nObservationError * this.nObservationError);
         this.vKalmanGain[0] = this.mStateCovariance[0][0] / tmp;
         this.vKalmanGain[1] =  this.mStateCovariance[1][0] / tmp;
 
-        double a = 1.0f;
     }
 
     private void updateProcessError() {
+
         this.mProcessError[0][0] = this.mStateCovariance[0][0] - this.vKalmanGain[0] * this.mStateCovariance[0][0];
         this.mProcessError[0][1] = this.mStateCovariance[0][1] - this.vKalmanGain[0] * this.mStateCovariance[0][1];
         this.mProcessError[1][0] = this.mStateCovariance[1][0] - this.vKalmanGain[1] * this.mStateCovariance[0][0];
         this.mProcessError[1][1] = this.mStateCovariance[1][1] - this.vKalmanGain[1] * this.mStateCovariance[0][1];
+
     }
 
     private double estimate() {
 
         double[] tmp = {this.mA[0][0] * this.vEstimate[0] + this.mA[0][1] * this.vEstimate[1], this.mA[1][0] * this.vEstimate[0] + this.mA[1][1] * this.vEstimate[1]};
 
-        //double tmpDifference = this.nObservation - this.vEstimate[0] * (this.mA[0][0] * this.vEstimate[0] + this.mA[0][1] * this.vEstimate[1]); 
         double tmpDifference = this.nObservation - (this.mA[0][0] * this.vEstimate[0] + this.mA[0][1] * this.vEstimate[1]); 
-
 
         this.vEstimate[0] = tmp[0] + this.vKalmanGain[0] * tmpDifference;
         this.vEstimate[1] = tmp[1] + this.vKalmanGain[1] * tmpDifference;
