@@ -1,6 +1,7 @@
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.util.ArrayList;
 
 class Localisation {
 
@@ -8,7 +9,6 @@ class Localisation {
     private double[][] coordinates;
     private double SPEED_OF_SOUND = 343;
     private Complex[][][] psd;
-    private Complex[][] spec;
     private int nBins;
     private Complex alphaCpx;
     private Complex oneMinusAlphaCpx;
@@ -22,6 +22,16 @@ class Localisation {
     private double oneMinusAlpha;
     private int nLowerBin, nUpperBin;
     private int blocklen_half;
+    private int num_theta;
+    private double[] v_P_abs_sum;
+    private double[] angles;
+    private boolean firstBlock = true;
+    private double nMinMag;
+    private double dt;
+    private int nSources = 2;
+    private double[] vKalmanPeaks;
+
+    private ArrayList<Kalman> aSources = new ArrayList<>();
 
     public Localisation() {
 
@@ -35,29 +45,34 @@ class Localisation {
         this.nLowerBin = 100;
         this.nUpperBin = (int) (blocksize / 2 + 1);
         this.blocklen_half = (int) (blocksize / 2 + 1);
-        this.alpha = 0.90f;
+        this.alpha = 0.4f;
+        this.nMinMag = 1.2f;
         this.oneMinusAlpha = 1.0f - this.alpha;
         this.alphaCpx = new Complex(this.alpha, 0);
         this.oneMinusAlphaCpx = new Complex((1 - this.alpha), 0);
+
+        // only for non-overlap add
+        this.dt = Kalman.calculateDt(blocksize, this.samplerate);
+        this.vKalmanPeaks = new double[this.nSources];
+        for (int iSource = 0; iSource < this.nSources; iSource++) {
+            aSources.add(new Kalman(this.dt));
+        }
 
         this.coordinates = establishCoordinates();
 
         double[][] result = estimateDoa(audioData, samplerate, coordinates, blocksize, overlap);
 
+        
+
         ResultWriter resultWriter = new ResultWriter("threshold.txt");
+
+System.out.println("Length: " + result[0].length);
+
         for (int iBlock = 0; iBlock < result.length; iBlock++) {
             resultWriter.write(result[iBlock]);
         }
 
         return result;
-
-        // # todo: check shape
-        // for azimuth in all_azimuth:
-        // sensor_data = self.generate_room(azimuth, coordinates, distance, raw_data,
-        // samplerate)
-        // estimated_doa.append(np.median(self.estimate_doa(sensor_data, samplerate,
-        // coordinates, blocksize, overlap)))
-
     }
 
     private double vectorAngle(double[] unit, double[] sensor) {
@@ -252,6 +267,149 @@ class Localisation {
         } catch (Exception e) { }
     }
 
+    private double[][] sourceDirections(Complex[][] spec) {
+
+        // Generation of the PSD
+
+        if (this.firstBlock) {
+
+            this.psd = new Complex[this.sensors][this.sensors][blocklen_half];
+
+            for (int iFreq = this.nLowerBin; iFreq < this.nUpperBin; iFreq++) {
+                for (int iRow = 0; iRow < this.sensors; iRow++) {
+                    for (int iCol = 0; iCol < this.sensors; iCol++) {
+                        this.psd[iRow][iCol][iFreq] = new Complex(
+                            spec[iRow][iFreq].re*spec[iCol][iFreq].re + spec[iRow][iFreq].im*spec[iCol][iFreq].im,
+                            spec[iRow][iFreq].im*spec[iCol][iFreq].re - spec[iRow][iFreq].re*spec[iCol][iFreq].im);
+                    }
+                }
+            }
+        } else {
+
+            for (int iFreq = this.nLowerBin; iFreq < this.nUpperBin; iFreq++) {
+                for (int iRow = 0; iRow < this.sensors; iRow++) {
+                    for (int iCol = 0; iCol < this.sensors; iCol++) {
+
+                        this.psd[iRow][iCol][iFreq].re = this.oneMinusAlpha * 
+                            (spec[iRow][iFreq].re*spec[iCol][iFreq].re + spec[iRow][iFreq].im*spec[iCol][iFreq].im) +
+                            this.alpha * this.psd[iRow][iCol][iFreq].re;
+                        this.psd[iRow][iCol][iFreq].im = this.oneMinusAlpha * 
+                            (spec[iRow][iFreq].im*spec[iCol][iFreq].re - spec[iRow][iFreq].re*spec[iCol][iFreq].im) +
+                            this.alpha * this.psd[iRow][iCol][iFreq].im;        
+                    }
+                }
+            }
+        }
+
+
+        // Testing of various azimuth angles
+
+        double nP = 0;
+
+        for (int iTheta = 0; iTheta < num_theta; iTheta++) {
+
+            nP = 0;
+
+            Complex[][] vectorA = getSteeringVector(iTheta);
+
+            // Power formula 27
+            for (int iBin = this.nLowerBin; iBin < this.nUpperBin; iBin++) {
+
+                Complex trace = getRealTrace(this.psd, iBin);
+            
+                Complex[][] eyeTimesTraceMinusPSD = generateEyeTimesComplex(this.sensors, trace);
+
+                for (int iRow = 0; iRow < this.sensors; iRow++) {
+                    for (int iCol = 0; iCol < this.sensors; iCol++) {
+
+                        eyeTimesTraceMinusPSD[iRow][iCol].re -= this.psd[iRow][iCol][iBin].re;
+                        eyeTimesTraceMinusPSD[iRow][iCol].im -= this.psd[iRow][iCol][iBin].im;
+                    }
+                }
+
+                Complex[] tmp = new Complex[this.sensors];
+                for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
+                    tmp[iSensor] = new Complex(0,0);
+                }
+
+                for (int iRow = 0; iRow < this.sensors; iRow++) {
+                    for (int iCol = 0; iCol < this.sensors; iCol++) {
+
+                        tmp[iRow].re += (eyeTimesTraceMinusPSD[iRow][iCol].re * vectorA[iCol][iBin].re - 
+                                            eyeTimesTraceMinusPSD[iRow][iCol].im * vectorA[iCol][iBin].im); 
+                        //tmp[iRow].im += (eyeTimesTraceMinusPSD[iRow][iCol].im * vectorA[iCol][iBin].re + 
+                        //                    eyeTimesTraceMinusPSD[iRow][iCol].re * vectorA[iCol][iBin].im); 
+                    }
+                }
+
+                Complex tmp2 = new Complex(0, 0);
+                for (int iRow = 0; iRow < this.sensors; iRow++) {
+                    for (int iCol = 0; iCol < this.sensors; iCol++) {
+
+                        tmp2.re += vectorA[iCol][iBin].re*tmp[iRow].re + 
+                            vectorA[iCol][iBin].im*tmp[iRow].im;
+                        //tmp2.im += vectorA[iCol][iBin].re*tmp[iRow].im - 
+                        //    vectorA[iCol][iBin].im*tmp[iRow].re; 
+
+                    }
+                }
+
+                // Power summation over all (interesting) bins
+                //nP += tmp2.abs();
+                nP += tmp2.re;
+            }
+            
+            v_P_abs_sum[iTheta] = -1f / nP;
+
+        }
+
+        // Loudness Normalization
+        double rms = Loudness.rms(v_P_abs_sum);
+        for (int iTheta = 0; iTheta < this.num_theta; iTheta++) {
+            v_P_abs_sum[iTheta] /= rms;
+        }
+
+        // Peak Picking
+        int[] vPeaks = FindPeaks.findPeaks(v_P_abs_sum);
+
+        // Quadratic Interpolation of Peak Positions
+        double[][] vRealPeaks = QuadraticInterpolation.findRealPeaks(v_P_abs_sum, vPeaks);
+
+        // Kalman Filtering
+        for (int iSource = 0; iSource < this.nSources; iSource++) {
+            this.vKalmanPeaks[iSource] = this.aSources.get(iSource).iterate(vRealPeaks[iSource][0]);
+        }
+
+        // Write all data to text file
+        double[][] tmp = new double[this.num_theta + 10 + this.nSources][2];
+
+        // Regular Source Distribution
+        for (int iTheta = 0; iTheta < this.num_theta; iTheta++) {
+            tmp[iTheta][0] = v_P_abs_sum[iTheta];
+        }
+        // Interpolated Peak Results
+        for (int iTheta = 0; iTheta < vRealPeaks[0].length; iTheta++) {
+            if (vRealPeaks[iTheta][1] > this.nMinMag) {
+                tmp[this.num_theta + iTheta][0] = vRealPeaks[iTheta][0];
+            }
+        }
+        // Kalman Filtered Sources
+        for (int iSource = 0; iSource < this.nSources; iSource++) {
+            if (vRealPeaks[iSource][1] > this.nMinMag) {
+                tmp[this.num_theta + 10 + iSource][0] = this.vKalmanPeaks[iSource];
+            }
+        }
+
+        if (this.firstBlock) {
+            this.firstBlock = false;
+        }
+
+        return tmp;
+    }
+
+
+
+
     private double[][] estimateDoa(double[][] sensor_data, int samplerate, double[][] coordinates, int blocksize,
             double overlap) {
 
@@ -262,7 +420,7 @@ class Localisation {
 
         int max_theta = 360;
         int step_theta = 10;
-        int num_theta = (int)(max_theta/step_theta);
+        this.num_theta = (int)(max_theta/step_theta);
         double theta[] = new double[num_theta];
         int idxTheta = 0;
         int idx = 0;
@@ -286,11 +444,12 @@ class Localisation {
         generateDelayTensor(theta, this.blocklen_half);
         generateComplexSensorVector();
 
-        this.spec = new Complex[this.sensors][this.blocklen_half];
+        Complex[][] spec = new Complex[this.sensors][this.blocklen_half];
+
         this.psd = new Complex[this.sensors][this.sensors][this.blocklen_half];
 
-        double[] angles = new double[num_blocks];
-        double[] v_P_abs_sum = new double[num_theta];
+        this.angles = new double[num_blocks];
+        this.v_P_abs_sum = new double[num_theta];
 
         int idx_in, idx_out;
         Complex[] signalBlock = new Complex[blocksize];
@@ -298,12 +457,8 @@ class Localisation {
             signalBlock[iSample] = new Complex(0,0);
         }
 
-        String filename = "threshold.txt";
-        File file = new File(filename);
-        file.delete();
-
-        double[][] mAbs_sum = new double[num_blocks][num_theta];
-
+        double[][] mAbs_sum = new double[num_blocks][this.num_theta+10+this.nSources];
+    
         for (int iBlock = 0; iBlock < num_blocks; iBlock++) {
 
             idx_in = (int) (iBlock * hopsize);
@@ -318,110 +473,37 @@ class Localisation {
                 }
                 InplaceFFT.fft(signalBlock);
                 for (int iFreq = 0; iFreq < this.blocklen_half; iFreq++) {
-                    this.spec[iSensor][iFreq] = new Complex(signalBlock[iFreq].re, signalBlock[iFreq].im);
-                }
-            }
-
-            // Generation of the PSD
-
-            if (iBlock == 0) {
-
-                this.psd = new Complex[this.sensors][this.sensors][blocklen_half];
-
-                for (int iFreq = this.nLowerBin; iFreq < this.nUpperBin; iFreq++) {
-                    for (int iRow = 0; iRow < this.sensors; iRow++) {
-                        for (int iCol = 0; iCol < this.sensors; iCol++) {
-                            this.psd[iRow][iCol][iFreq] = new Complex(
-                                this.spec[iRow][iFreq].re*this.spec[iCol][iFreq].re + this.spec[iRow][iFreq].im*this.spec[iCol][iFreq].im,
-                                this.spec[iRow][iFreq].im*this.spec[iCol][iFreq].re - this.spec[iRow][iFreq].re*this.spec[iCol][iFreq].im);
-                        }
-                    }
-                }
-            } else {
-
-                for (int iFreq = this.nLowerBin; iFreq < this.nUpperBin; iFreq++) {
-                    for (int iRow = 0; iRow < this.sensors; iRow++) {
-                        for (int iCol = 0; iCol < this.sensors; iCol++) {
-    
-                            this.psd[iRow][iCol][iFreq].re = this.oneMinusAlpha * 
-                                (this.spec[iRow][iFreq].re*this.spec[iCol][iFreq].re + this.spec[iRow][iFreq].im*this.spec[iCol][iFreq].im) +
-                                this.alpha * this.psd[iRow][iCol][iFreq].re;
-                            this.psd[iRow][iCol][iFreq].im = this.oneMinusAlpha * 
-                                (this.spec[iRow][iFreq].im*this.spec[iCol][iFreq].re - this.spec[iRow][iFreq].re*this.spec[iCol][iFreq].im) +
-                                this.alpha * this.psd[iRow][iCol][iFreq].im;        
-                        }
-                    }
+                    spec[iSensor][iFreq] = new Complex(signalBlock[iFreq].re, signalBlock[iFreq].im);
                 }
             }
 
 
-            // Testing of various azimuth angles
 
-            double nP = 0;
 
-            for (int iTheta = 0; iTheta < num_theta; iTheta++) {
+            double[][] directions = sourceDirections(spec);
 
-                nP = 0;
 
-                Complex[][] vectorA = getSteeringVector(iTheta);
+            
 
-                // Power formula 27
-                for (int iBin = this.nLowerBin; iBin < this.nUpperBin; iBin++) {
+            //System.out.println("Number of potential sources: " + directions[0].length);
 
-                    Complex trace = getRealTrace(this.psd, iBin);
-                
-                    Complex[][] eyeTimesTraceMinusPSD = generateEyeTimesComplex(this.sensors, trace);
+            /*for (int iPeak = 0; iPeak < directions[0].length; iPeak++) {
+                System.out.println("[" + iPeak + "]: " + directions[iPeak][0] + " / " + directions[iPeak][1]);
+                mAbs_sum[iBlock][iPeak] = directions[iPeak][0];
+            }*/
 
-                    for (int iRow = 0; iRow < this.sensors; iRow++) {
-                        for (int iCol = 0; iCol < this.sensors; iCol++) {
 
-                            eyeTimesTraceMinusPSD[iRow][iCol].re -= this.psd[iRow][iCol][iBin].re;
-                            eyeTimesTraceMinusPSD[iRow][iCol].im -= this.psd[iRow][iCol][iBin].im;
-                        }
-                    }
 
-                    Complex[] tmp = new Complex[this.sensors];
-                    for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
-                        tmp[iSensor] = new Complex(0,0);
-                    }
-
-                    for (int iRow = 0; iRow < this.sensors; iRow++) {
-                        for (int iCol = 0; iCol < this.sensors; iCol++) {
-
-                            tmp[iRow].re += (eyeTimesTraceMinusPSD[iRow][iCol].re * vectorA[iCol][iBin].re - 
-                                                eyeTimesTraceMinusPSD[iRow][iCol].im * vectorA[iCol][iBin].im); 
-                            //tmp[iRow].im += (eyeTimesTraceMinusPSD[iRow][iCol].im * vectorA[iCol][iBin].re + 
-                            //                    eyeTimesTraceMinusPSD[iRow][iCol].re * vectorA[iCol][iBin].im); 
-                        }
-                    }
-
-                    Complex tmp2 = new Complex(0, 0);
-                    for (int iRow = 0; iRow < this.sensors; iRow++) {
-                        for (int iCol = 0; iCol < this.sensors; iCol++) {
-
-                            tmp2.re += vectorA[iCol][iBin].re*tmp[iRow].re + 
-                                vectorA[iCol][iBin].im*tmp[iRow].im;
-                            //tmp2.im += vectorA[iCol][iBin].re*tmp[iRow].im - 
-                            //    vectorA[iCol][iBin].im*tmp[iRow].re; 
-
-                        }
-                    }
-
-                    // Power summation over all (interesting) bins
-                    //nP += tmp2.abs();
-                    nP += tmp2.re;
-                }
-                
-                v_P_abs_sum[iTheta] = 1f / nP;
-                mAbs_sum[iBlock][iTheta] = 1f / nP;
-
+            for (int iPeak = 0; iPeak < this.num_theta + 10 + this.nSources; iPeak++) {
+                mAbs_sum[iBlock][iPeak] = directions[iPeak][0];
             }
 
-            int arg = argMax(v_P_abs_sum);
-            angles[iBlock] = theta[arg];
+
+
             
         }
 
+        
     return mAbs_sum;
 }
 

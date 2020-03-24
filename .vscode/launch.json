@@ -6,6 +6,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "CodeLens (Launch) - Loudness",
+            "request": "launch",
+            "mainClass": "Loudness",
+            "projectName": "VIWER_TheHouseIsOnFire_82fb4e7a"
+        },
+        {
+            "type": "java",
             "name": "CodeLens (Launch) - TestPeakFind",
             "request": "launch",
             "mainClass": "TestPeakFind",

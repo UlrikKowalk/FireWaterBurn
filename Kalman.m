@@ -41,7 +41,7 @@ classdef Kalman < handle
             
             % Process Error Update
             obj.mProcessError = obj.mStateCovariance - obj.vKalmanGain * obj.mH * obj.mStateCovariance;
-
+    
             % Estimation
             obj.vEstimate = obj.mA * obj.vEstimate + obj.vKalmanGain * (obj.nObservation - obj.mH * obj.mA * obj.vEstimate); 
                   

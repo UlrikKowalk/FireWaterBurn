@@ -13,7 +13,6 @@ class TestClass {
         int blocksize = 512;
         double overlap = 0.0;
 
-
         Localisation localisation = new Localisation();
 
         

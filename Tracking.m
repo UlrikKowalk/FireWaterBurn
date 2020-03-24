@@ -16,13 +16,20 @@ classdef Tracking < handle
         
         T_constant;
         PP0;
+        PP;
+        x1_pred;
+        x1_hat;
+        x1;
+        x_init;
+        PHI;
         A;
         rho1;
         rho2;
         rho3;
         B;
-        PHI;
+       
         Q_test;
+        Q_sqrt;
         Q;
         eVL;
         VL;
@@ -32,7 +39,6 @@ classdef Tracking < handle
         x0;
         w_std;
         R1;
-        Q_sqrt;
         
     end
     
@@ -93,21 +99,21 @@ classdef Tracking < handle
             
         end
         
-        function [] = iterate(nNewData)
+        function [x1_hat] = iterate(nNewData)
             
             if obj.bInitial
-                PP = obj.PP0;  % predicted in|in-1
-                x1_pred=obj.x0';
+                obj.PP = obj.PP0;  % predicted in|in-1
+                obj.x1_pred=obj.x0';
             else
-                PP = obj.PHI*obj.PPU*obj.PHI' + obj.Q;  % P predicted in|in-1
-                x1_pred=obj.PHI*x1_hat;     % predict x1
+                obj.PP = obj.PHI*obj.PPU*obj.PHI' + obj.Q;  % P predicted in|in-1
+                obj.x1_pred=obj.PHI*obj.x1_hat;     % predict x1
             end
             
             if obj.bInitial
                 obj.bInitial = false;
-                x1(n,1:3)=x_init;
+                obj.x1(n,1:3)=obj.x_init;
             else
-                x1(n,1:3)=PHI*x1(n-1,1:3)' + Q_sqrt'*randn(3,1);
+                obj.x1(n,1:3)=obj.PHI*obj.x1(n-1,1:3)' + obj.Q_sqrt'*randn(3,1);
             end
             y1(n)=C*x1(n,1:3)';
             y(n)=y1(n) + R1^0.5*randn(1,1);
