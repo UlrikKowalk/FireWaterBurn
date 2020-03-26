@@ -1,5 +1,5 @@
 
-import java.util.*; 
+import java.util.Random;
 
 class Kalman {
 
@@ -14,7 +14,6 @@ class Kalman {
 
     private double[] vKalmanGain = {0.0f, 0.0f};
     private double[] vEstimate = {0.0f, 0.0f};
-    private double[] vH = {1.0f, 0.0f};
 
     private double[][] mA;
     private double[][] mQ = newZeroMatrix(2, 2);
@@ -72,6 +71,45 @@ class Kalman {
 
     }
 
+    public double iterateWeighted(double[] vCandidates, double[] vTheta, double nWidth) {
+
+        // Return a weighted mean source candidate
+
+        // Account for cyclic range 
+        int nCandidates = vCandidates.length;
+        double nSpread = Math.abs(vTheta[vTheta.length-1] - vTheta[0]);
+        double[] vTempCandidates = new double[3*nCandidates];
+        for (int iCandidate = 0; iCandidate < nCandidates; iCandidate++) {
+            vTempCandidates[iCandidate] = vCandidates[iCandidate] - nSpread;
+            vTempCandidates[iCandidate + nCandidates] = vCandidates[iCandidate];
+            vTempCandidates[iCandidate + 2*nCandidates] = vCandidates[iCandidate] + nSpread;
+        } 
+
+        double[] vWeights = new double[3*nCandidates];
+        double nSumWeights = 0.0f;
+        double tmp = 0.0f;
+        for (int iWeight = 0; iWeight < 3*nCandidates; iWeight++) {
+            tmp = pdf(vTempCandidates[iWeight], this.vEstimate[0], nWidth * (5 * this.vKalmanGain[0] + 0.5f));
+            vWeights[iWeight] = tmp;
+            nSumWeights += tmp;
+        }
+
+        double nEstiPos = 0.0f;
+        for (int iCandidate = 0; iCandidate < nCandidates; iCandidate++) {
+            nEstiPos += vCandidates[iCandidate] * vWeights[iCandidate];
+        }
+        for (int iCandidate = 0; iCandidate < nCandidates; iCandidate++) {
+            nEstiPos += vCandidates[iCandidate] * vWeights[iCandidate + nCandidates];
+        }
+        for (int iCandidate = 0; iCandidate < nCandidates; iCandidate++) {
+            nEstiPos += vCandidates[iCandidate] * vWeights[iCandidate + 2*nCandidates];
+        }
+        nEstiPos /= nSumWeights;
+
+        return this.iterate(nEstiPos);
+
+    }
+
     private void makeObservation(double nNewMeasurement) {
 
         this.nObservation = nNewMeasurement + this.nObservationError * oRandom.nextGaussian();
@@ -112,6 +150,10 @@ class Kalman {
 
         return this.vEstimate[0];
 
+    }
+
+    public double getEstimate() {
+        return this.vEstimate[0];
     }
 
     private double[][] newZeroMatrix(int nRows, int nCols) {
@@ -166,5 +208,14 @@ class Kalman {
         return mResult;
     }
 
+     // return pdf(x) = standard Gaussian pdf
+     public static double pdf(double x) {
+        return Math.exp(-x*x / 2) / Math.sqrt(2 * Math.PI);
+    }
+
+    // return pdf(x, mu, signma) = Gaussian pdf with mean mu and stddev sigma
+    public static double pdf(double x, double mu, double sigma) {
+        return pdf((x - mu) / sigma) / sigma;
+    }
 
 }

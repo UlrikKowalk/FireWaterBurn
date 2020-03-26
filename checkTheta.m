@@ -19,12 +19,13 @@ nSources = 2;
 numTicks = 8;
 nStep = 10;
 nTheta = 360/nStep;
-a = reshape(threshold, nTheta+10+nSources, length(threshold)/(nTheta+10+nSources));
+a = reshape(threshold, nTheta+10+2*nSources, length(threshold)/(nTheta+10+2*nSources));
 mPeaks = a(37:46,:);
 
 nTau = nBlockSize/nFs;
 
 mKalman = a(47:46+nSources, :);
+mKalmanWeighted = a(47+nSources:46+2*nSources, :);
 
 a(37:end,:) = [];
 
@@ -182,6 +183,7 @@ for iBlock = 1:nBlocks
     for (iSource = 1:nSources)
         if (mKalman(iSource, iBlock) ~= 0)
             plot(vTimeBlock(iBlock), (mKalman(iSource, iBlock))*nStep, 'gd'); 
+            plot(vTimeBlock(iBlock), (mKalmanWeighted(iSource, iBlock))*nStep, 'y+');
             %plot(vTimeBlock(iBlock), (mKalOut(iBlock, iSource))*nStep, 'gd'); 
         end
     end

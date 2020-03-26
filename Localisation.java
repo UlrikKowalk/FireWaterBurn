@@ -30,6 +30,10 @@ class Localisation {
     private double dt;
     private int nSources = 2;
     private double[] vKalmanPeaks;
+    private double[] vKalmanPeaksWeighted;
+    private double[] theta;
+
+    private int bTMPBLOCK = 0;
 
     private ArrayList<Kalman> aSources = new ArrayList<>();
 
@@ -54,6 +58,7 @@ class Localisation {
         // only for non-overlap add
         this.dt = Kalman.calculateDt(blocksize, this.samplerate);
         this.vKalmanPeaks = new double[this.nSources];
+        this.vKalmanPeaksWeighted = new double[this.nSources];
         for (int iSource = 0; iSource < this.nSources; iSource++) {
             aSources.add(new Kalman(this.dt));
         }
@@ -375,13 +380,30 @@ System.out.println("Length: " + result[0].length);
         // Quadratic Interpolation of Peak Positions
         double[][] vRealPeaks = QuadraticInterpolation.findRealPeaks(v_P_abs_sum, vPeaks);
 
-        // Kalman Filtering
+        double[] vCandidates = new double[this.nSources];
         for (int iSource = 0; iSource < this.nSources; iSource++) {
-            this.vKalmanPeaks[iSource] = this.aSources.get(iSource).iterate(vRealPeaks[iSource][0]);
+            vCandidates[iSource] = vRealPeaks[iSource][0];
+            //System.out.println("source: " + vCandidates[iSource]);
         }
 
+        // Kalman Filtering
+        for (int iSource = 0; iSource < this.nSources; iSource++) {
+
+            if (this.bTMPBLOCK < 20) {
+                this.vKalmanPeaks[iSource] = this.aSources.get(iSource).iterate(vRealPeaks[iSource][0]);
+                this.vKalmanPeaksWeighted[iSource] = 0.0f;
+             } else {
+                this.vKalmanPeaks[iSource] = this.aSources.get(iSource).iterate(vRealPeaks[iSource][0]); 
+                this.vKalmanPeaksWeighted[iSource] = this.aSources.get(iSource).iterateWeighted(vCandidates, theta, 2.0f);
+             }
+            //System.out.println("weighted: " + this.vKalmanPeaks[iSource]);
+
+        }
+
+    this.bTMPBLOCK++;
+
         // Write all data to text file
-        double[][] tmp = new double[this.num_theta + 10 + this.nSources][2];
+        double[][] tmp = new double[this.num_theta + 10 + 2 * this.nSources][2];
 
         // Regular Source Distribution
         for (int iTheta = 0; iTheta < this.num_theta; iTheta++) {
@@ -397,6 +419,12 @@ System.out.println("Length: " + result[0].length);
         for (int iSource = 0; iSource < this.nSources; iSource++) {
             if (vRealPeaks[iSource][1] > this.nMinMag) {
                 tmp[this.num_theta + 10 + iSource][0] = this.vKalmanPeaks[iSource];
+            }
+        }
+        // Kalman Filtered Weighted Sources
+        for (int iSource = 0; iSource < this.nSources; iSource++) {
+            if (vRealPeaks[iSource][1] > this.nMinMag) {
+                tmp[this.num_theta + 10 + this.nSources + iSource][0] = this.vKalmanPeaksWeighted[iSource];
             }
         }
 
@@ -421,16 +449,17 @@ System.out.println("Length: " + result[0].length);
         int max_theta = 360;
         int step_theta = 10;
         this.num_theta = (int)(max_theta/step_theta);
-        double theta[] = new double[num_theta];
+        //double[] theta = new double[num_theta];
+        this.theta = new double[num_theta];
         int idxTheta = 0;
         int idx = 0;
         while (idxTheta < max_theta) {
-            theta[idx] = 2 * Math.PI * idxTheta / 360f;
+            this.theta[idx] = 2 * Math.PI * idxTheta / 360f;
             idx++;
             idxTheta += step_theta;
         }
 
-        System.out.println("Theta: " + theta.length);
+        System.out.println("Theta: " + this.theta.length);
         
         double samplerateDividedByBlocksize = (double) samplerate / blocksize;
         this.frequencies = new double[this.blocklen_half];
@@ -441,7 +470,7 @@ System.out.println("Length: " + result[0].length);
         this.complexZeroNum = new Complex(0,0);
 
         generateComplexZero(this.sensors);
-        generateDelayTensor(theta, this.blocklen_half);
+        generateDelayTensor(this.theta, this.blocklen_half);
         generateComplexSensorVector();
 
         Complex[][] spec = new Complex[this.sensors][this.blocklen_half];
@@ -457,7 +486,7 @@ System.out.println("Length: " + result[0].length);
             signalBlock[iSample] = new Complex(0,0);
         }
 
-        double[][] mAbs_sum = new double[num_blocks][this.num_theta+10+this.nSources];
+        double[][] mAbs_sum = new double[num_blocks][this.num_theta+10+2*this.nSources];
     
         for (int iBlock = 0; iBlock < num_blocks; iBlock++) {
 
@@ -494,7 +523,7 @@ System.out.println("Length: " + result[0].length);
 
 
 
-            for (int iPeak = 0; iPeak < this.num_theta + 10 + this.nSources; iPeak++) {
+            for (int iPeak = 0; iPeak < this.num_theta + 10 + 2*this.nSources; iPeak++) {
                 mAbs_sum[iBlock][iPeak] = directions[iPeak][0];
             }
 
