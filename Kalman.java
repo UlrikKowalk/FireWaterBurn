@@ -3,12 +3,14 @@ import java.util.Random;
 
 class Kalman {
 
-    private static int numSources = 0;
     private final static int NUMSECONDSTILLDEATH = 5;
+
+    private Source context;
 
     private int numBlocksRemaining;
 
     private double dt;
+
     private double nObservationError = 1e-3f;
     private double nObservation;
 
@@ -23,17 +25,14 @@ class Kalman {
     private Random oRandom = new Random();
 
 
-    public Kalman(double dt) {
+    public Kalman(double dt, Source context, double pos) {
 
-        numSources++;
         this.dt = dt;
+        this.context = context;
+        this.vEstimate[0] = pos;
         this.mA = new double[][] {{1.0f, this.dt}, {0.0f, 1.0f}};
         this.resetRemaining();
 
-    }
-
-    public static int getNumberOfSources() {
-        return numSources;
     }
 
     public static double calculateDt(int blocksize, int samplingrate) {
@@ -68,45 +67,6 @@ class Kalman {
 
         // Estimation
         return estimate();
-
-    }
-
-    public double iterateWeighted(double[] vCandidates, double[] vTheta, double nWidth) {
-
-        // Return a weighted mean source candidate
-
-        // Account for cyclic range 
-        int nCandidates = vCandidates.length;
-        double nSpread = Math.abs(vTheta[vTheta.length-1] - vTheta[0]);
-        double[] vTempCandidates = new double[3*nCandidates];
-        for (int iCandidate = 0; iCandidate < nCandidates; iCandidate++) {
-            vTempCandidates[iCandidate] = vCandidates[iCandidate] - nSpread;
-            vTempCandidates[iCandidate + nCandidates] = vCandidates[iCandidate];
-            vTempCandidates[iCandidate + 2*nCandidates] = vCandidates[iCandidate] + nSpread;
-        } 
-
-        double[] vWeights = new double[3*nCandidates];
-        double nSumWeights = 0.0f;
-        double tmp = 0.0f;
-        for (int iWeight = 0; iWeight < 3*nCandidates; iWeight++) {
-            tmp = pdf(vTempCandidates[iWeight], this.vEstimate[0], nWidth * (5 * this.vKalmanGain[0] + 0.5f));
-            vWeights[iWeight] = tmp;
-            nSumWeights += tmp;
-        }
-
-        double nEstiPos = 0.0f;
-        for (int iCandidate = 0; iCandidate < nCandidates; iCandidate++) {
-            nEstiPos += vCandidates[iCandidate] * vWeights[iCandidate];
-        }
-        for (int iCandidate = 0; iCandidate < nCandidates; iCandidate++) {
-            nEstiPos += vCandidates[iCandidate] * vWeights[iCandidate + nCandidates];
-        }
-        for (int iCandidate = 0; iCandidate < nCandidates; iCandidate++) {
-            nEstiPos += vCandidates[iCandidate] * vWeights[iCandidate + 2*nCandidates];
-        }
-        nEstiPos /= nSumWeights;
-
-        return this.iterate(nEstiPos);
 
     }
 
@@ -206,16 +166,6 @@ class Kalman {
         mResult[1][1] = mA[1][0]*mB[1][0] + mA[1][1]*mB[1][1];
 
         return mResult;
-    }
-
-     // return pdf(x) = standard Gaussian pdf
-     public static double pdf(double x) {
-        return Math.exp(-x*x / 2) / Math.sqrt(2 * Math.PI);
-    }
-
-    // return pdf(x, mu, signma) = Gaussian pdf with mean mu and stddev sigma
-    public static double pdf(double x, double mu, double sigma) {
-        return pdf((x - mu) / sigma) / sigma;
     }
 
 }

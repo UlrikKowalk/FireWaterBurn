@@ -14,7 +14,7 @@ load(sFilename);
 [vSignal, nFs] = audioread(sFileAudio);
 
 nBlockSize = 512;
-nSources = 2;
+nSources = 5;
 
 numTicks = 8;
 nStep = 10;
@@ -183,7 +183,7 @@ for iBlock = 1:nBlocks
     for (iSource = 1:nSources)
         if (mKalman(iSource, iBlock) ~= 0)
             plot(vTimeBlock(iBlock), (mKalman(iSource, iBlock))*nStep, 'gd'); 
-            plot(vTimeBlock(iBlock), (mKalmanWeighted(iSource, iBlock))*nStep, 'y+');
+            %plot(vTimeBlock(iBlock), (mKalmanWeighted(iSource, iBlock))*nStep, 'y+');
             %plot(vTimeBlock(iBlock), (mKalOut(iBlock, iSource))*nStep, 'gd'); 
         end
     end

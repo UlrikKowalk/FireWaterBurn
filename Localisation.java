@@ -7,7 +7,8 @@ class Localisation {
 
     private int sensors;
     private double[][] coordinates;
-    private double SPEED_OF_SOUND = 343;
+    private static final double SPEED_OF_SOUND = 343;
+    private static final int MAXSOURCES = 5;
     private Complex[][][] psd;
     private int nBins;
     private Complex alphaCpx;
@@ -28,14 +29,15 @@ class Localisation {
     private boolean firstBlock = true;
     private double nMinMag;
     private double dt;
-    private int nSources = 2;
-    private double[] vKalmanPeaks;
-    private double[] vKalmanPeaksWeighted;
     private double[] theta;
+    private int max_theta;
+    private int step_theta;
 
     private int bTMPBLOCK = 0;
 
-    private ArrayList<Kalman> aSources = new ArrayList<>();
+    private SourceManager sourceManager;
+
+    
 
     public Localisation() {
 
@@ -55,14 +57,18 @@ class Localisation {
         this.alphaCpx = new Complex(this.alpha, 0);
         this.oneMinusAlphaCpx = new Complex((1 - this.alpha), 0);
 
+        this.max_theta = 360;
+        this.step_theta = 10;
+        this.num_theta = (int)(max_theta/step_theta);
+
+        this.sourceManager = new SourceManager(dt, this.num_theta);
+
         // only for non-overlap add
         this.dt = Kalman.calculateDt(blocksize, this.samplerate);
-        this.vKalmanPeaks = new double[this.nSources];
-        this.vKalmanPeaksWeighted = new double[this.nSources];
-        for (int iSource = 0; iSource < this.nSources; iSource++) {
-            aSources.add(new Kalman(this.dt));
-        }
-
+        /*for (int iSource = 0; iSource < this.nSources; iSource++) {
+            aSources.add(new Kalman(this.dt, this));
+        }*/
+        
         this.coordinates = establishCoordinates();
 
         double[][] result = estimateDoa(audioData, samplerate, coordinates, blocksize, overlap);
@@ -70,9 +76,6 @@ class Localisation {
         
 
         ResultWriter resultWriter = new ResultWriter("threshold.txt");
-
-System.out.println("Length: " + result[0].length);
-
         for (int iBlock = 0; iBlock < result.length; iBlock++) {
             resultWriter.write(result[iBlock]);
         }
@@ -272,7 +275,7 @@ System.out.println("Length: " + result[0].length);
         } catch (Exception e) { }
     }
 
-    private double[][] sourceDirections(Complex[][] spec) {
+    private double[] sourceDirections(Complex[][] spec) {
 
         // Generation of the PSD
 
@@ -289,6 +292,7 @@ System.out.println("Length: " + result[0].length);
                     }
                 }
             }
+
         } else {
 
             for (int iFreq = this.nLowerBin; iFreq < this.nUpperBin; iFreq++) {
@@ -378,55 +382,39 @@ System.out.println("Length: " + result[0].length);
         int[] vPeaks = FindPeaks.findPeaks(v_P_abs_sum);
 
         // Quadratic Interpolation of Peak Positions
-        double[][] vRealPeaks = QuadraticInterpolation.findRealPeaks(v_P_abs_sum, vPeaks);
+        double[][] mRealPeaks = QuadraticInterpolation.findRealPeaks(v_P_abs_sum, vPeaks);
 
-        double[] vCandidates = new double[this.nSources];
-        for (int iSource = 0; iSource < this.nSources; iSource++) {
-            vCandidates[iSource] = vRealPeaks[iSource][0];
-            //System.out.println("source: " + vCandidates[iSource]);
-        }
 
-        // Kalman Filtering
-        for (int iSource = 0; iSource < this.nSources; iSource++) {
+        // Tracking
+        double[] vKalmanPeaks = sourceManager.trackSources(mRealPeaks);
+        
 
-            if (this.bTMPBLOCK < 20) {
-                this.vKalmanPeaks[iSource] = this.aSources.get(iSource).iterate(vRealPeaks[iSource][0]);
-                this.vKalmanPeaksWeighted[iSource] = 0.0f;
-             } else {
-                this.vKalmanPeaks[iSource] = this.aSources.get(iSource).iterate(vRealPeaks[iSource][0]); 
-                this.vKalmanPeaksWeighted[iSource] = this.aSources.get(iSource).iterateWeighted(vCandidates, theta, 2.0f);
-             }
-            //System.out.println("weighted: " + this.vKalmanPeaks[iSource]);
-
-        }
-
-    this.bTMPBLOCK++;
 
         // Write all data to text file
-        double[][] tmp = new double[this.num_theta + 10 + 2 * this.nSources][2];
+        double[] tmp = new double[this.num_theta + 10 + 2 * SourceManager.MAX_SOURCES];
 
         // Regular Source Distribution
         for (int iTheta = 0; iTheta < this.num_theta; iTheta++) {
-            tmp[iTheta][0] = v_P_abs_sum[iTheta];
+            tmp[iTheta] = v_P_abs_sum[iTheta];
         }
         // Interpolated Peak Results
-        for (int iTheta = 0; iTheta < vRealPeaks[0].length; iTheta++) {
-            if (vRealPeaks[iTheta][1] > this.nMinMag) {
-                tmp[this.num_theta + iTheta][0] = vRealPeaks[iTheta][0];
+        for (int iTheta = 0; iTheta < mRealPeaks[0].length; iTheta++) {
+            if (mRealPeaks[iTheta][1] > this.nMinMag) {
+                tmp[this.num_theta + iTheta] = mRealPeaks[iTheta][0];
             }
         }
         // Kalman Filtered Sources
-        for (int iSource = 0; iSource < this.nSources; iSource++) {
-            if (vRealPeaks[iSource][1] > this.nMinMag) {
-                tmp[this.num_theta + 10 + iSource][0] = this.vKalmanPeaks[iSource];
-            }
+        for (int iSource = 0; iSource < 2*SourceManager.MAX_SOURCES; iSource++) {
+            //if (vRealPeaks[iSource][1] > this.nMinMag) {
+                tmp[this.num_theta + 10 + iSource] = vKalmanPeaks[iSource];
+            //}
         }
         // Kalman Filtered Weighted Sources
-        for (int iSource = 0; iSource < this.nSources; iSource++) {
-            if (vRealPeaks[iSource][1] > this.nMinMag) {
-                tmp[this.num_theta + 10 + this.nSources + iSource][0] = this.vKalmanPeaksWeighted[iSource];
-            }
-        }
+        //for (int iSource = 0; iSource < vRealPeaks.length; iSource++) {
+        //    if (vRealPeaks[iSource][1] > this.nMinMag) {
+        //        tmp[this.num_theta + 10 + MAXSOURCES + iSource][0] = this.vKalmanPeaksWeighted[iSource];
+        //    }
+        //}
 
         if (this.firstBlock) {
             this.firstBlock = false;
@@ -446,17 +434,15 @@ System.out.println("Length: " + result[0].length);
         int num_blocks = (int) Math.floor((length - blocksize) / hopsize);
         double[] window = hann(blocksize);
 
-        int max_theta = 360;
-        int step_theta = 10;
-        this.num_theta = (int)(max_theta/step_theta);
+        
         //double[] theta = new double[num_theta];
         this.theta = new double[num_theta];
         int idxTheta = 0;
         int idx = 0;
-        while (idxTheta < max_theta) {
+        while (idxTheta < this.max_theta) {
             this.theta[idx] = 2 * Math.PI * idxTheta / 360f;
             idx++;
-            idxTheta += step_theta;
+            idxTheta += this.step_theta;
         }
 
         System.out.println("Theta: " + this.theta.length);
@@ -486,7 +472,7 @@ System.out.println("Length: " + result[0].length);
             signalBlock[iSample] = new Complex(0,0);
         }
 
-        double[][] mAbs_sum = new double[num_blocks][this.num_theta+10+2*this.nSources];
+        double[][] mAbs_sum = new double[num_blocks][this.num_theta+10+2*MAXSOURCES];
     
         for (int iBlock = 0; iBlock < num_blocks; iBlock++) {
 
@@ -509,7 +495,7 @@ System.out.println("Length: " + result[0].length);
 
 
 
-            double[][] directions = sourceDirections(spec);
+            double[] directions = sourceDirections(spec);
 
 
             
@@ -523,8 +509,8 @@ System.out.println("Length: " + result[0].length);
 
 
 
-            for (int iPeak = 0; iPeak < this.num_theta + 10 + 2*this.nSources; iPeak++) {
-                mAbs_sum[iBlock][iPeak] = directions[iPeak][0];
+            for (int iPeak = 0; iPeak < this.num_theta + 10 + 2*MAXSOURCES; iPeak++) {
+                mAbs_sum[iBlock][iPeak] = directions[iPeak];
             }
 
 
