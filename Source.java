@@ -5,7 +5,7 @@ public class Source {
     private Kalman kalman;
     private double nAngle;
     private double nSpread;
-    private double nWidth = 2.0f;
+    private double nWidth = 4.0f;
     private int blocksWithoutUpdate = 0;
 
 
@@ -75,12 +75,6 @@ public class Source {
         return this.blocksWithoutUpdate;
     }
 
-    public void killSource(){
-
-    }
-
-
-
     public double getAngle() {
         return this.kalman.getEstimate();
     }
@@ -94,7 +88,7 @@ public class Source {
         return Math.exp(-x*x / 2) / Math.sqrt(2 * Math.PI);
     }
 
-    // return pdf(x, mu, signma) = Gaussian pdf with mean mu and stddev sigma
+    // return pdf(x, mu, sigma) = Gaussian pdf with mean mu and stddev sigma
     public static double pdf(double x, double mu, double sigma) {
         return pdf((x - mu) / sigma) / sigma;
     }

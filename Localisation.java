@@ -405,16 +405,8 @@ class Localisation {
         }
         // Kalman Filtered Sources
         for (int iSource = 0; iSource < 2*SourceManager.MAX_SOURCES; iSource++) {
-            //if (vRealPeaks[iSource][1] > this.nMinMag) {
-                tmp[this.num_theta + 10 + iSource] = vKalmanPeaks[iSource];
-            //}
+            tmp[this.num_theta + 10 + iSource] = vKalmanPeaks[iSource];
         }
-        // Kalman Filtered Weighted Sources
-        //for (int iSource = 0; iSource < vRealPeaks.length; iSource++) {
-        //    if (vRealPeaks[iSource][1] > this.nMinMag) {
-        //        tmp[this.num_theta + 10 + MAXSOURCES + iSource][0] = this.vKalmanPeaksWeighted[iSource];
-        //    }
-        //}
 
         if (this.firstBlock) {
             this.firstBlock = false;
@@ -478,6 +470,9 @@ class Localisation {
 
             idx_in = (int) (iBlock * hopsize);
             idx_out = (int) (idx_in + blocksize);
+
+
+            System.out.println("Block: " + iBlock);
 
             // Generation of the Spectrum
 

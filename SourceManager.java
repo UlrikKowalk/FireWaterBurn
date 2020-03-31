@@ -5,16 +5,14 @@ public class SourceManager {
     public final static int MAX_SOURCES = 5;
     public final static int MAX_BLOCKS_WITHOUT_UPDATE = 5;
     private int NUM_SOURCES = 0;
-    private int iBlock = 0;
 
     private ArrayList<Source> sources;
     private ArrayList<ArrayList<Double>> candidateList;
 
     private double dt;
-    private double nWidth = 2.0f;
     private double num_theta;
     private double thresholdProbability = 0.05f;
-    private double thresholdPeak = 1.5f;
+    private double thresholdPeak = 1.8f;
 
     private double[] vKalmanPeaks;
     private double[] vKalmanPeaksWeighted;
@@ -26,9 +24,13 @@ public class SourceManager {
         this.num_theta = num_theta;
         this.sources = new ArrayList<>();
         
-        vKalmanPeaks = new double[SourceManager.MAX_SOURCES];
-        vKalmanPeaksWeighted = new double[SourceManager.MAX_SOURCES];
-
+        this.vKalmanPeaks = new double[SourceManager.MAX_SOURCES];
+        this.vKalmanPeaksWeighted = new double[SourceManager.MAX_SOURCES];
+        for (int iSource = 0; iSource < SourceManager.MAX_SOURCES; iSource++) {
+            this.vKalmanPeaks[iSource] = -255;
+            this.vKalmanPeaksWeighted[iSource] = -255;
+        }
+        
     }
 
     public double[] trackSources(double[][] mPeaks) {
@@ -40,17 +42,14 @@ public class SourceManager {
             this.candidateList.add(new ArrayList<>());
         }
 
-        //int[] vCandidateListNumEl = new int[this.NUM_SOURCES];
-
-
         for (int iPeak = 0; iPeak < mPeaks[0].length; iPeak++) {
 
             if (this.NUM_SOURCES == 0) {
-                // No sources yet -> every peak is a new source
+                // No sources yet -> every peak is a potential new source
                 double[] firstResult = new double[2 * SourceManager.MAX_SOURCES];
                 int idxtmp = 0;
                 for (int iPk = 0; iPk < mPeaks[0].length; iPk++) {
-                    if (mPeaks[iPk][1] > this.thresholdPeak) {
+                    if (mPeaks[iPk][1] > this.thresholdPeak && this.NUM_SOURCES < SourceManager.MAX_SOURCES) {
                         addSource(mPeaks[iPk][0]);
                         firstResult[idxtmp] = mPeaks[iPk][0];
                         this.vKalmanPeaks[idxtmp] = this.sources.get(this.sources.size()-1).iterate(mPeaks[iPk][0]);
@@ -69,12 +68,13 @@ public class SourceManager {
 
                     if (idx == -255) {
                         // No matching source found
-                        addSource(mPeaks[iPeak][0]);
-                        this.candidateList.get(this.candidateList.size()-1).add(mPeaks[iPeak][0]); 
+                        if (this.NUM_SOURCES < SourceManager.MAX_SOURCES) {
+                            addSource(mPeaks[iPeak][0]);
+                            this.candidateList.get(this.candidateList.size()-1).add(mPeaks[iPeak][0]); 
+                        }
                     } else {
                         // Matching source found
                         this.candidateList.get(idx).add(mPeaks[iPeak][0]); 
-                        //vCandidateListNumEl[idx] = this.candidateList.get(idx).size();
                     }
 
                 }
@@ -82,13 +82,9 @@ public class SourceManager {
 
         }
 
-        
-
-
-
-
         // Kalman Filtering
         for (int iSource = 0; iSource < this.NUM_SOURCES; iSource++) {
+            
             if (candidateList.size() > 0) {
                 this.vCandidates = new double[candidateList.get(iSource).size()];
                 for (int iCandidate = 0; iCandidate < candidateList.get(iSource).size(); iCandidate++) {
@@ -99,16 +95,17 @@ public class SourceManager {
             }
 
           
-                if (candidateList.get(iSource).size() == 0) {
-                    this.vKalmanPeaks[iSource] = this.sources.get(iSource).noUpdate();
-                } else if (candidateList.get(iSource).size() == 1) {
-                    this.vKalmanPeaks[iSource] = this.sources.get(iSource).iterate(vCandidates[0]);
-                } else {
-                    this.vKalmanPeaks[iSource] = this.sources.get(iSource).iterateWeighted(vCandidates);
-                }
+            if (candidateList.get(iSource).size() == 0) {
+                this.vKalmanPeaks[iSource] = this.sources.get(iSource).noUpdate();
+                System.out.println("[Source " + iSource + "]: no update");
+            } else if (candidateList.get(iSource).size() == 1) {
+                this.vKalmanPeaks[iSource] = this.sources.get(iSource).iterate(vCandidates[0]);
+            } else {
+                this.vKalmanPeaks[iSource] = this.sources.get(iSource).iterateWeighted(vCandidates);
+            }
              
 
-             if (this.sources.get(iSource).getBlocksWithoutUpdate() > MAX_BLOCKS_WITHOUT_UPDATE) {
+             if (this.sources.get(iSource).getBlocksWithoutUpdate() >= MAX_BLOCKS_WITHOUT_UPDATE) {
                  sourcesToDelete.add(iSource);
              }
 
@@ -116,16 +113,15 @@ public class SourceManager {
 
         deleteSource(sourcesToDelete);
 
-
         double[] vResult = new double[2 * SourceManager.MAX_SOURCES];
-        for (int iSource = 0; iSource < SourceManager.MAX_SOURCES; iSource++) {
+        for (int iSource = 0; iSource < this.NUM_SOURCES; iSource++) {
             vResult[iSource] = this.vKalmanPeaks[iSource];
         }
-        //for (int iSource = 0; iSource < SourceManager.MAX_SOURCES; iSource++) {
-        //    vResult[iSource + SourceManager.MAX_SOURCES] = this.vKalmanPeaksWeighted[iSource];
-        //}
+        for (int iSource = this.NUM_SOURCES; iSource < 2 * SourceManager.MAX_SOURCES; iSource++) {
+            vResult[iSource] = -255.0f;
+        }
 
-        this.iBlock++;
+        //this.iBlock++;
 
         return vResult;
 

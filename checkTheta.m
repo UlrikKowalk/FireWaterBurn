@@ -174,11 +174,11 @@ for iBlock = 1:nBlocks
     nPks = length(vPks);
     plot(vTimeBlock(iBlock)*ones(nPks, 1), vPks*nStep, 'rx'); 
    
-    for iPeak = 1:length(mMagsMat(1:nPeaks, iBlock))
-        if mMagsMat(iPeak, iBlock) > nMagMin
-            plot(vTimeBlock(iBlock)*ones(nPeaks, 1), (mPeaksMat(iPeak, iBlock)-1)*nStep, 'b.'); 
-        end
-    end
+%     for iPeak = 1:length(mMagsMat(1:nPeaks, iBlock))
+%         if mMagsMat(iPeak, iBlock) > nMagMin
+%             plot(vTimeBlock(iBlock)*ones(nPeaks, 1), (mPeaksMat(iPeak, iBlock)-1)*nStep, 'b.'); 
+%         end
+%     end
     
     for (iSource = 1:nSources)
         if (mKalman(iSource, iBlock) ~= 0)
