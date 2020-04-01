@@ -30,7 +30,6 @@ public class SourceManager {
             this.vKalmanPeaks[iSource] = -255;
             this.vKalmanPeaksWeighted[iSource] = -255;
         }
-        
     }
 
     public double[] trackSources(double[][] mPeaks) {
@@ -76,10 +75,8 @@ public class SourceManager {
                         // Matching source found
                         this.candidateList.get(idx).add(mPeaks[iPeak][0]); 
                     }
-
                 }
             }
-
         }
 
         // Kalman Filtering
@@ -93,22 +90,19 @@ public class SourceManager {
             } else {
                 this.vCandidates = new double[] {mPeaks[iSource][0], mPeaks[iSource][0]};
             }
-
           
             if (candidateList.get(iSource).size() == 0) {
                 this.vKalmanPeaks[iSource] = this.sources.get(iSource).noUpdate();
-                System.out.println("[Source " + iSource + "]: no update");
             } else if (candidateList.get(iSource).size() == 1) {
                 this.vKalmanPeaks[iSource] = this.sources.get(iSource).iterate(vCandidates[0]);
             } else {
                 this.vKalmanPeaks[iSource] = this.sources.get(iSource).iterateWeighted(vCandidates);
             }
              
-
-             if (this.sources.get(iSource).getBlocksWithoutUpdate() >= MAX_BLOCKS_WITHOUT_UPDATE) {
-                 sourcesToDelete.add(iSource);
-             }
-
+            // Sources with more blocks without update than MAX_BLOCKS_WITHOUT_UPDATE are deleted
+            if (this.sources.get(iSource).getBlocksWithoutUpdate() >= MAX_BLOCKS_WITHOUT_UPDATE) {
+                sourcesToDelete.add(iSource);
+            }
         }
 
         deleteSource(sourcesToDelete);
@@ -120,19 +114,13 @@ public class SourceManager {
         for (int iSource = this.NUM_SOURCES; iSource < 2 * SourceManager.MAX_SOURCES; iSource++) {
             vResult[iSource] = -255.0f;
         }
-
-        //this.iBlock++;
-
         return vResult;
-
-
     }
 
     private void addSource(double nPeak) {
         this.sources.add(new Source(nPeak, this, this.dt, this.num_theta));
         this.NUM_SOURCES++;
         this.candidateList.add(new ArrayList<>());
-        System.out.println("[a] NUMSOURCES: " + this.NUM_SOURCES);
     }
 
     private void deleteSource(ArrayList<Integer> delete) {
@@ -141,7 +129,6 @@ public class SourceManager {
                 this.sources.remove((int) delete.get(iSource));
                 this.NUM_SOURCES--;
             }
-            System.out.println("[d] NUMSOURCES: " + this.NUM_SOURCES);
         }
     }
 
@@ -176,8 +163,4 @@ public class SourceManager {
         }
         return arg;
     }
-
-
-
-
 }

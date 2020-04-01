@@ -13,7 +13,7 @@ public class Source {
         this.nAngle = angle;
         this.context = sourceManager;
         this.nSpread = nSpread;
-        this.kalman = new Kalman(dt, this, this.nAngle);
+        this.kalman = new Kalman(dt, this.nAngle);
     }
 
 

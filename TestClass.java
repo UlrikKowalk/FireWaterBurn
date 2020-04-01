@@ -12,33 +12,17 @@ class TestClass {
         
         int blocksize = 512;
         double overlap = 0.0;
-
-        Localisation localisation = new Localisation();
-
         
-
-        int nRuns = 1;
-
         long startTime = System.nanoTime();
 
 
-        double[][] vResult = localisation.runExperiment(wave.returnAudio(), wave.getSampleRate(), blocksize, overlap);
+        Viwer viwer = new Viwer(wave.getSampleRate(), blocksize, overlap, wave.getNumChannels());
+        viwer.analyseAndFilter(wave.returnAudio());
    
 
         long endTime = System.nanoTime();
-
-        long duration = (endTime - startTime)/nRuns; 
-        
-        /*for (int iRes = 0; iRes < vResult.length; iRes++) {
-            print(" " + vResult[iRes] / Math.PI * 180f);
-        }*/
-        
+        long duration = (endTime - startTime); 
         print("Execution took " + duration/1e6 + "ms");
-
-
-        
-
-
     }
 
     public static void print(String string) {

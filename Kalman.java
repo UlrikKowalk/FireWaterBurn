@@ -5,8 +5,6 @@ class Kalman {
 
     private final static int NUMSECONDSTILLDEATH = 5;
 
-    private Source context;
-
     private int numBlocksRemaining;
 
     private double dt;
@@ -25,10 +23,9 @@ class Kalman {
     private Random oRandom = new Random();
 
 
-    public Kalman(double dt, Source context, double pos) {
+    public Kalman(double dt, double pos) {
 
         this.dt = dt;
-        this.context = context;
         this.vEstimate[0] = pos;
         this.mA = new double[][] {{1.0f, this.dt}, {0.0f, 1.0f}};
         this.resetRemaining();

@@ -3,6 +3,14 @@ close all;
 clc;
 
 bQuad = true;
+bSave = false;
+
+width = 16/2.54;     % Width in inches
+height = 8/2.54;    % Height in inches
+alw = 0.75;    % AxesLineWidth
+fsz = 9;      % Fontsize
+lw = 1.5;      % LineWidth
+msz = 8;       % MarkerSize
 
 % STATES: 0: new, 1: alive, 2: dying
 
@@ -241,6 +249,29 @@ hold off;
 % axis tight;
 % 
 % hold off;
+
+set(gca, 'FontSize', fsz, 'LineWidth', alw); %<- Set properties
+
+
+if bSave
+    pos = get(gcf, 'Position');
+    set(gcf, 'Position', [pos(1) pos(2) width*300, height*300]); %<- Set size
+    set(gca, 'FontSize', fsz, 'LineWidth', alw); %<- Set properties
+
+    % Here we preserve the size of the image when we save it.
+    set(gcf,'InvertHardcopy','on');
+    set(gcf,'PaperUnits', 'inches');
+    papersize = get(gcf, 'PaperSize');
+    left = (papersize(1)- width)/2;
+    bottom = (papersize(2)- height)/2;
+    myfiguresize = [left, bottom, width, height];
+    set(gcf,'PaperPosition', myfiguresize);
+    
+    %set(gcf,'PaperPositionMode','Auto','PaperUnits','Inches');%,'PaperSize',[pos(3), pos(4)])
+
+    print('Source_Tracking','-dpdf','-r300');
+    close all;
+end
 
 
 fprintf('Done.\n');

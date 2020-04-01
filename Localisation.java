@@ -6,6 +6,8 @@ import java.util.ArrayList;
 class Localisation {
 
     private int sensors;
+    private int blocksize;
+    private int hopsize;
     private double[][] coordinates;
     private static final double SPEED_OF_SOUND = 343;
     private static final int MAXSOURCES = 5;
@@ -21,8 +23,9 @@ class Localisation {
     private Complex complexZeroNum;
     private double alpha;
     private double oneMinusAlpha;
+    private double overlap;
     private int nLowerBin, nUpperBin;
-    private int blocklen_half;
+    private int blocksize_half;
     private int num_theta;
     private double[] v_P_abs_sum;
     private double[] angles;
@@ -30,172 +33,98 @@ class Localisation {
     private double nMinMag;
     private double dt;
     private double[] theta;
-    private int max_theta;
-    private int step_theta;
+    //private int max_theta;
+    //private int step_theta;
+    private SteeringVector steeringVector;
+    
 
-    private int bTMPBLOCK = 0;
+    //private int bTMPBLOCK = 0;
 
-    private SourceManager sourceManager;
+    //private SourceManager sourceManager;
 
     
 
-    public Localisation() {
+    public Localisation(int sensors, int samplerate, int blocksize) {
 
-    }
-
-    public double[][] runExperiment(double[][] audioData, int samplerate, int blocksize, double overlap) {
-
-        this.sensors = audioData.length;
+        this.sensors = sensors;
         this.samplerate = samplerate;
+        this.blocksize = blocksize;
 
         this.nLowerBin = 100;
-        this.nUpperBin = (int) (blocksize / 2 + 1);
-        this.blocklen_half = (int) (blocksize / 2 + 1);
+        this.blocksize_half = (int) (this.blocksize / 2 + 1);
+        this.nUpperBin = this.blocksize_half;
+        
         this.alpha = 0.4f;
         this.nMinMag = 1.2f;
         this.oneMinusAlpha = 1.0f - this.alpha;
         this.alphaCpx = new Complex(this.alpha, 0);
         this.oneMinusAlphaCpx = new Complex((1 - this.alpha), 0);
 
-        this.max_theta = 360;
-        this.step_theta = 10;
+        double max_theta = 360;
+        double step_theta = 10;
         this.num_theta = (int)(max_theta/step_theta);
 
-        this.sourceManager = new SourceManager(dt, this.num_theta);
-
-        // only for non-overlap add
-        this.dt = Kalman.calculateDt(blocksize, this.samplerate);
-        /*for (int iSource = 0; iSource < this.nSources; iSource++) {
-            aSources.add(new Kalman(this.dt, this));
-        }*/
-        
-        this.coordinates = establishCoordinates();
-
-        double[][] result = estimateDoa(audioData, samplerate, coordinates, blocksize, overlap);
-
-        
-
-        ResultWriter resultWriter = new ResultWriter("threshold.txt");
-        for (int iBlock = 0; iBlock < result.length; iBlock++) {
-            resultWriter.write(result[iBlock]);
+        this.theta = new double[this.num_theta];
+        int idxTheta = 0;
+        int idx = 0;
+        while (idxTheta < max_theta) {
+            this.theta[idx] = 2 * Math.PI * idxTheta / 360f;
+            idx++;
+            idxTheta += step_theta;
         }
+
+        //this.hopsize = (int) (this.blocksize * (1.0 - this.overlap));
+        this.steeringVector = new SteeringVector(sensors, samplerate, blocksize);
+        this.mTheta = this.steeringVector.generateDelayTensor(this.theta);
+
+        this.v_P_abs_sum = new double[this.num_theta];
+
+        
+
+        System.out.println("Theta: " + this.theta.length);
+
+    }
+
+    public int getNumTheta() {
+        return this.num_theta;
+    }
+
+
+    /*public double[][] runExperiment(double[][] audioData) {
+
+        
+
+        
+
+        
+
+
+     
+
+
+        
+        //this.coordinates = establishCoordinates();
+
+        
+
+        
+
+        //ResultWriter resultWriter = new ResultWriter("threshold.txt");
+        //for (int iBlock = 0; iBlock < result.length; iBlock++) {
+        //    resultWriter.write(result[iBlock]);
+        //}
 
         return result;
-    }
+    }*/
 
-    private double vectorAngle(double[] unit, double[] sensor) {
-
-        /**
-         * Calculate the Angle between two Vectors
-         */
-
-        double dotProduct = unit[0] * sensor[0] + unit[1] * sensor[1] + unit[2] * sensor[2];
-        double normUnit = calculateNorm(unit);
-        double normSensor = calculateNorm(sensor);
-        double angle = Math.acos((double) (dotProduct / (normUnit * normSensor)));
-
-        if (sensor[1] < unit[1]) {
-            angle = -angle;
-        }
-
-        return angle;
-    }
-
-    private double[][] establishCoordinates() {
-
-        /**
-         * Generate Coordinates for MatrixVoice Array
-         */
-
-        double[][] coordinates = new double[this.sensors][3];
-        double omega;
-
-        // Not necessary, just feels right
-        coordinates[0][0] = 0;
-        coordinates[0][1] = 0;
-        coordinates[0][2] = 0;
-
-        for (int iSensor = 1; iSensor < this.sensors; iSensor++) {
-            omega = -2f * Math.PI * (iSensor - 1) / (this.sensors - 1) - Math.PI;
-            coordinates[iSensor][0] = Math.PI * Math.cos(omega) * 0.01;
-            coordinates[iSensor][1] = Math.PI * Math.sin(omega) * 0.01;
-            coordinates[iSensor][2] = 0;
-        }
-
-        return coordinates;
-    }
-    
-    private double[] calculateDelays(double theta) {
-
-        /**
-         * Calculate the time delay at each microphone for a given angle theta
-         */
-
-        double[][] coords = new double[this.sensors][3];
-
-        // Center coordinates around first entry
-        for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
-            coords[iSensor][0] = this.coordinates[iSensor][0] - this.coordinates[this.sensors - 1][0];
-            coords[iSensor][1] = this.coordinates[iSensor][1] - this.coordinates[this.sensors - 1][1];
-            coords[iSensor][2] = this.coordinates[iSensor][2] - this.coordinates[this.sensors - 1][2];
-        }
-
-        double[] v_unit = new double[] { 1, 0, 0 };
-        double[] delays = new double[sensors];
-
-        for (int iSensor = 0; iSensor < sensors; iSensor++) {
-
-            delays[iSensor] = NaNtoZero(calculateNorm(coords[iSensor])
-                    * Math.cos(theta + vectorAngle(v_unit, coords[iSensor])) / this.SPEED_OF_SOUND);
-        }
-
-        return delays;
-    }
-
-    private void generateDelayTensor(double[] theta, int blocklen_half) {
-        
-        this.mTheta = new Complex[theta.length][this.sensors][blocklen_half];
-        double[] v_tau_theta = new double[this.sensors];
-
-        for (int iTheta = 0; iTheta < theta.length; iTheta++) {
-            // Calculation of Delays
-            v_tau_theta = calculateDelays(theta[iTheta]);
-            
-            // Creation of Steering Vector
-            for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
-                for (int iFreq = 0; iFreq < blocklen_half; iFreq++) {
-                    this.mTheta[iTheta][iSensor][iFreq] = new Complex(0,0);
-                    this.mTheta[iTheta][iSensor][iFreq].re = Math.cos(-2f * Math.PI * this.frequencies[iFreq] * v_tau_theta[iSensor]);
-                    this.mTheta[iTheta][iSensor][iFreq].im = Math.sin(-2f * Math.PI * this.frequencies[iFreq] * v_tau_theta[iSensor]);
-                }
-            }
-        }
-    }
 
     private Complex[][] getSteeringVector(int iTheta) {
         return this.mTheta[iTheta];
     }
 
 
-    private double calculateNorm(double[] vector) {
-        return Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]);
-    }
 
-    private double NaNtoZero(double number) {
-        if (Double.isNaN(number)) {
-            return 0;
-        } else {
-            return number;
-        }
-    }
-
-    private double[] hann(int blocksize) {
-        double[] window = new double[blocksize];
-        for (int iSample = 0; iSample < blocksize; iSample++) {
-            window[iSample] = 0.5 * (1 - Math.cos(2 * Math.PI * iSample / (blocksize - 1)));
-        }
-        return window;
-    }
+    
 
     private Complex getRealTrace(Complex[][][] matrix, int iFreq) {
 
@@ -263,7 +192,7 @@ class Localisation {
     private void generateComplexSensorVector() {
         this.complexSensorVector = new Complex[this.sensors];
         for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
-            complexSensorVector[iSensor] = new Complex(0,0);
+            this.complexSensorVector[iSensor] = new Complex(0,0);
         }
     }
 
@@ -275,13 +204,57 @@ class Localisation {
         } catch (Exception e) { }
     }
 
-    private double[] sourceDirections(Complex[][] spec) {
+
+
+
+    /*private double[][] estimateDoa(double[][] sensor_data) {
+
+        
+
+        
+        
+        
+        
+
+        //this.complexZeroNum = new Complex(0,0);
+
+        //generateComplexZero(this.sensors);
+        
+        //generateComplexSensorVector();
+
+        
+
+        
+        
+
+
+
+
+            double[] directions = sourceDirections(spec);
+
+
+
+            //for (int iPeak = 0; iPeak < this.num_theta + 10 + 2*MAXSOURCES; iPeak++) {
+            //    mAbs_sum[iBlock][iPeak] = directions[iPeak];
+            //}
+
+
+
+            
+        }
+
+        
+    return mAbs_sum;
+}*/
+
+
+    public double[][] sourceDirections(Complex[][] spec) {
 
         // Generation of the PSD
 
         if (this.firstBlock) {
 
-            this.psd = new Complex[this.sensors][this.sensors][blocklen_half];
+            this.psd = new Complex[this.sensors][this.sensors][blocksize_half];
 
             for (int iFreq = this.nLowerBin; iFreq < this.nUpperBin; iFreq++) {
                 for (int iRow = 0; iRow < this.sensors; iRow++) {
@@ -385,13 +358,12 @@ class Localisation {
         double[][] mRealPeaks = QuadraticInterpolation.findRealPeaks(v_P_abs_sum, vPeaks);
 
 
-        // Tracking
-        double[] vKalmanPeaks = sourceManager.trackSources(mRealPeaks);
+        
         
 
 
         // Write all data to text file
-        double[] tmp = new double[this.num_theta + 10 + 2 * SourceManager.MAX_SOURCES];
+        /*double[] tmp = new double[this.num_theta + 10 + 2 * SourceManager.MAX_SOURCES];
 
         // Regular Source Distribution
         for (int iTheta = 0; iTheta < this.num_theta; iTheta++) {
@@ -406,115 +378,111 @@ class Localisation {
         // Kalman Filtered Sources
         for (int iSource = 0; iSource < 2*SourceManager.MAX_SOURCES; iSource++) {
             tmp[this.num_theta + 10 + iSource] = vKalmanPeaks[iSource];
-        }
-
+        }*/
         if (this.firstBlock) {
             this.firstBlock = false;
         }
-
-        return tmp;
+        
+        return mRealPeaks;
     }
 
 
 
+    /*private double calculateNorm(double[] vector) {
+        return Math.sqrt(vector[0] * vector[0] + vector[1] * vector[1] + vector[2] * vector[2]);
+    }*/
 
-    private double[][] estimateDoa(double[][] sensor_data, int samplerate, double[][] coordinates, int blocksize,
-            double overlap) {
+    /*private double NaNtoZero(double number) {
+        if (Double.isNaN(number)) {
+            return 0;
+        } else {
+            return number;
+        }
+    }*/
 
-        int length = sensor_data[0].length;
-        double hopsize = blocksize * (1.0 - overlap);
-        int num_blocks = (int) Math.floor((length - blocksize) / hopsize);
-        double[] window = hann(blocksize);
 
-        
-        //double[] theta = new double[num_theta];
-        this.theta = new double[num_theta];
-        int idxTheta = 0;
-        int idx = 0;
-        while (idxTheta < this.max_theta) {
-            this.theta[idx] = 2 * Math.PI * idxTheta / 360f;
-            idx++;
-            idxTheta += this.step_theta;
+    /*private double vectorAngle(double[] unit, double[] sensor) {
+
+        // Calculate the Angle between two Vectors
+
+        double dotProduct = unit[0] * sensor[0] + unit[1] * sensor[1] + unit[2] * sensor[2];
+        double normUnit = calculateNorm(unit);
+        double normSensor = calculateNorm(sensor);
+        double angle = Math.acos((double) (dotProduct / (normUnit * normSensor)));
+
+        if (sensor[1] < unit[1]) {
+            angle = -angle;
         }
 
-        System.out.println("Theta: " + this.theta.length);
-        
-        double samplerateDividedByBlocksize = (double) samplerate / blocksize;
-        this.frequencies = new double[this.blocklen_half];
-        for (int iFreq = 0; iFreq < this.blocklen_half; iFreq++) {
-            this.frequencies[iFreq] = iFreq * samplerateDividedByBlocksize;
+        return angle;
+    }*/
+
+    /*private double[][] establishCoordinates() {
+
+        // Generate Coordinates for MatrixVoice Array
+
+        double[][] coordinates = new double[this.sensors][3];
+        double omega;
+
+        // Not necessary, just feels right
+        coordinates[0][0] = 0;
+        coordinates[0][1] = 0;
+        coordinates[0][2] = 0;
+
+        for (int iSensor = 1; iSensor < this.sensors; iSensor++) {
+            omega = -2f * Math.PI * (iSensor - 1) / (this.sensors - 1) - Math.PI;
+            coordinates[iSensor][0] = Math.PI * Math.cos(omega) * 0.01;
+            coordinates[iSensor][1] = Math.PI * Math.sin(omega) * 0.01;
+            coordinates[iSensor][2] = 0;
         }
 
-        this.complexZeroNum = new Complex(0,0);
-
-        generateComplexZero(this.sensors);
-        generateDelayTensor(this.theta, this.blocklen_half);
-        generateComplexSensorVector();
-
-        Complex[][] spec = new Complex[this.sensors][this.blocklen_half];
-
-        this.psd = new Complex[this.sensors][this.sensors][this.blocklen_half];
-
-        this.angles = new double[num_blocks];
-        this.v_P_abs_sum = new double[num_theta];
-
-        int idx_in, idx_out;
-        Complex[] signalBlock = new Complex[blocksize];
-        for (int iSample = 0; iSample < blocksize; iSample++) {
-            signalBlock[iSample] = new Complex(0,0);
-        }
-
-        double[][] mAbs_sum = new double[num_blocks][this.num_theta+10+2*MAXSOURCES];
+        return coordinates;
+    }*/
     
-        for (int iBlock = 0; iBlock < num_blocks; iBlock++) {
+    /*private double[] calculateDelays(double theta) {
 
-            idx_in = (int) (iBlock * hopsize);
-            idx_out = (int) (idx_in + blocksize);
+        //Calculate the time delay at each microphone for a given angle theta
+        
+        double[][] coords = new double[this.sensors][3];
 
-
-            System.out.println("Block: " + iBlock);
-
-            // Generation of the Spectrum
-
-            for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
-                for (int iSample = idx_in; iSample < idx_out; iSample++) {
-                    signalBlock[iSample - idx_in].re = sensor_data[iSensor][iSample] * window[iSample - idx_in];
-                    signalBlock[iSample - idx_in].im = 0;
-                }
-                InplaceFFT.fft(signalBlock);
-                for (int iFreq = 0; iFreq < this.blocklen_half; iFreq++) {
-                    spec[iSensor][iFreq] = new Complex(signalBlock[iFreq].re, signalBlock[iFreq].im);
-                }
-            }
-
-
-
-
-            double[] directions = sourceDirections(spec);
-
-
-            
-
-            //System.out.println("Number of potential sources: " + directions[0].length);
-
-            /*for (int iPeak = 0; iPeak < directions[0].length; iPeak++) {
-                System.out.println("[" + iPeak + "]: " + directions[iPeak][0] + " / " + directions[iPeak][1]);
-                mAbs_sum[iBlock][iPeak] = directions[iPeak][0];
-            }*/
-
-
-
-            for (int iPeak = 0; iPeak < this.num_theta + 10 + 2*MAXSOURCES; iPeak++) {
-                mAbs_sum[iBlock][iPeak] = directions[iPeak];
-            }
-
-
-
-            
+        // Center coordinates around first entry
+        for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
+            coords[iSensor][0] = this.coordinates[iSensor][0] - this.coordinates[this.sensors - 1][0];
+            coords[iSensor][1] = this.coordinates[iSensor][1] - this.coordinates[this.sensors - 1][1];
+            coords[iSensor][2] = this.coordinates[iSensor][2] - this.coordinates[this.sensors - 1][2];
         }
 
+        double[] v_unit = new double[] { 1, 0, 0 };
+        double[] delays = new double[sensors];
+
+        for (int iSensor = 0; iSensor < sensors; iSensor++) {
+
+            delays[iSensor] = NaNtoZero(calculateNorm(coords[iSensor])
+                    * Math.cos(theta + vectorAngle(v_unit, coords[iSensor])) / this.SPEED_OF_SOUND);
+        }
+
+        return delays;
+    }*/
+
+    /*private void generateDelayTensor(double[] theta, int blocklen_half) {
         
-    return mAbs_sum;
-}
+        this.mTheta = new Complex[theta.length][this.sensors][blocklen_half];
+        double[] v_tau_theta = new double[this.sensors];
+
+        for (int iTheta = 0; iTheta < theta.length; iTheta++) {
+            // Calculation of Delays
+            v_tau_theta = calculateDelays(theta[iTheta]);
+            
+            // Creation of Steering Vector
+            for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
+                for (int iFreq = 0; iFreq < blocklen_half; iFreq++) {
+                    this.mTheta[iTheta][iSensor][iFreq] = new Complex(0,0);
+                    this.mTheta[iTheta][iSensor][iFreq].re = Math.cos(-2f * Math.PI * this.frequencies[iFreq] * v_tau_theta[iSensor]);
+                    this.mTheta[iTheta][iSensor][iFreq].im = Math.sin(-2f * Math.PI * this.frequencies[iFreq] * v_tau_theta[iSensor]);
+                }
+            }
+        }
+    }*/
+
 
 }
