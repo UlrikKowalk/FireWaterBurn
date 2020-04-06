@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: ca.mjdsystems.jmatio.test.SimulinkMatTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.022 sec - in ca.mjdsystems.jmatio.test.SimulinkMatTest

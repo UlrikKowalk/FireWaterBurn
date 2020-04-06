@@ -12,9 +12,8 @@ fsz = 9;      % Fontsize
 lw = 1.5;      % LineWidth
 msz = 8;       % MarkerSize
 
-% STATES: 0: new, 1: alive, 2: dying
 
-sFilename = 'threshold.txt';
+sFilename = 'threshold_kal.txt';
 sFileAudio = 'media/0_recording_joined.wav';
 
 load(sFilename);
@@ -27,7 +26,8 @@ nSources = 5;
 numTicks = 8;
 nStep = 10;
 nTheta = 360/nStep;
-a = reshape(threshold, nTheta+10+2*nSources, length(threshold)/(nTheta+10+2*nSources));
+
+a = reshape(threshold_kal, nTheta+10+2*nSources, length(threshold_kal)/(nTheta+10+2*nSources));
 mPeaks = a(37:46,:);
 
 nTau = nBlockSize/nFs;
@@ -79,88 +79,7 @@ for iBlock = 1 : nBlocks
             end
         end
     end
-    
-    
-%     aKal(1).iterate(mPeaksMat(1));
-%     aKal(2).iterate(mPeaksMat(2));
-%     
-%     mKalOut(iBlock, 1) = aKal(1).getData();
-%     mKalOut(iBlock, 2) = aKal(2).getData();
-
-%     
-%     if iBlock == 1
-%         
-%         for iLoc = 1:length(loc)
-%             stSources(iLoc).Theta = loc(iLoc);
-%             stSources(iLoc).Magnitude = mag(iLoc);
-%             stSources(iLoc).State = 2;
-%         end
-%         
-%     else
-%         
-%         stSourcesPrev = stSources;
-%         
-%         vErase = [];
-%         for iSource = 1 : length(stSources)
-%             if (stSources(iSource).State == 2)
-%                 vErase(end+1) = iSource;
-%             end
-%         end
-%         stSources(vErase) = [];
-%         
-%        
-%         vLocationsPrev = zeros(size(stSourcesPrev, 2), 1);
-%         
-%         for iLoc = 1 : size(stSourcesPrev, 2)
-%             vLocationsPrev(iLoc) = stSourcesPrev(iLoc).Theta;
-%         end
-%     
-%         for iLoc = 1 : size(loc, 1)
-%            
-%             vDistance = abs(vLocationsPrev - loc(iLoc));
-%             [~, arg] = min(vDistance);
-%             if vDistance(arg) <= nDistanceLimit
-%                 stSources(iLoc).Theta = loc(iLoc);
-%                 stSources(iLoc).Magnitude = mag(iLoc);
-%                 stSources(iLoc).State = 1;
-%             else 
-%                 stSources(iLoc).Theta = loc(iLoc);
-%                 stSources(iLoc).Magnitude = mag(iLoc);
-%                 stSources(iLoc).State = 0;
-%             end
-%             
-%         end
-%         
-%         for iLocPrev = 1 : size(stSourcesPrev, 2)
-%            
-%             vDistance = abs(loc - stSourcesPrev(iLocPrev).Theta);
-%             [~, arg] = min(vDistance);
-%             if arg > nDistanceLimit
-%                 stSources(end+1).Theta = stSourcesPrev(iLocPrev).Theta;
-%                 stSources(end+1).Magnitude = stSourcesPrev(iLocPrev).Magnitude;
-%                 stSources(end+1).State = 2;
-%             else 
-%                 fprintf('EXCEPTION\n');
-%             end
-%             
-%         end
-%           
-%     end
-%     
-%     for iSource = 1 : size(stSources, 2)
-%         switch(stSources(iSource).State)
-%             case 0
-%                 plot(iBlock, stSources(iSource).Theta, 'yx');
-%             case 1
-%                 plot(iBlock, stSources(iSource).Theta, 'rx');
-%             case 2
-%                 plot(iBlock, stSources(iSource).Theta, 'bx');
-%         end
-%     end
-    
-%     drawnow;    
-    
-    
+   
 end
  
 

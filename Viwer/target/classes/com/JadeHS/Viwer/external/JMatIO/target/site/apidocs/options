@@ -1,0 +1,24 @@
+-classpath
+'i:/VIWER_TheHouseIsOnFire/external/JMatIO/target/classes'
+-encoding
+'UTF-8'
+-protected
+-sourcepath
+'i:/VIWER_TheHouseIsOnFire/external/JMatIO/src/main/java'
+-author
+-bottom
+'Copyright &#169; 2020. All rights reserved.'
+-charset
+'UTF-8'
+-d
+'i:/VIWER_TheHouseIsOnFire/external/JMatIO/target/site/apidocs'
+-docencoding
+'UTF-8'
+-doctitle
+'jmatio 1.2-SNAPSHOT API'
+-linkoffline
+'http://docs.oracle.com/javase/6/docs/api' 'i:/VIWER_TheHouseIsOnFire/external/JMatIO/target/javadoc-bundle-options'
+-use
+-version
+-windowtitle
+'jmatio 1.2-SNAPSHOT API'

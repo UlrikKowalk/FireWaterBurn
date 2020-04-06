@@ -7,22 +7,25 @@ public class Source {
     private double nSpread;
     private double nWidth = 4.0f;
     private int blocksWithoutUpdate = 0;
-
+    private double alpha = 0.95f;
 
     public Source(double angle, SourceManager sourceManager, double dt, double nSpread) {
+
         this.nAngle = angle;
         this.context = sourceManager;
         this.nSpread = nSpread;
         this.kalman = new Kalman(dt, this.nAngle);
+
     }
 
 
-    public double iterate(double nCandidate) {
+    public double[] iterate(double nCandidate) {
         this.blocksWithoutUpdate = 0;
-        return this.kalman.iterate(nCandidate);
+        this.nAngle = (1.0f - this.alpha) * this.kalman.iterate(nCandidate) + this.alpha * this.nAngle;
+        return new double[] {this.nAngle, Math.pow(0.5f, this.blocksWithoutUpdate)};
     }
 
-    public double iterateWeighted(double[] vCandidates) {
+    public double[] iterateWeighted(double[] vCandidates) {
 
         // Account for cyclic range 
         int nCandidates = vCandidates.length;
@@ -38,17 +41,10 @@ public class Source {
         double nSumWeights = 0.0f;
         double tmp = 0.0f;
         for (int iWeight = 0; iWeight < 3*nCandidates; iWeight++) {
-            //tmp = pdf(vTempCandidates[iWeight], this.vEstimate[0], this.nWidth * (5 * this.vKalmanGain[0] + 0.5f));
             tmp = pdf(vTempCandidates[iWeight], this.nAngle, this.nWidth);
             vWeights[iWeight] = tmp;
             nSumWeights += tmp;
         }
-
-        // Decide whether or not to kill this source
-        /*if (nSumWeights < 0.1f) {
-            this.context.killSource(this);
-            return -1.0f;
-        }*/
 
         double nEstiPos = 0.0f;
         for (int iCandidate = 0; iCandidate < nCandidates; iCandidate++) {

@@ -11,7 +11,7 @@ class Viwer {
 
     private Complex[] signalBlock;
     private Complex[][] spec;
-    private Complex[][][] psd;
+    //private Complex[][][] psd;
 
     private Localisation localisation;
     private SourceManager sourceManager;
@@ -25,7 +25,7 @@ class Viwer {
         this.overlap = overlap;
         this.sensors = sensors;
 
-        this.hopsize = (int) (this.blocksize * (1.0 - overlap));
+        this.hopsize = (int) (this.blocksize * (1.0 - this.overlap));
         this.blocklen_half = (int) (this.blocksize / 2 + 1);
         
         this.steeringVector = new SteeringVector(this.sensors, this.samplerate, blocksize);
@@ -37,13 +37,15 @@ class Viwer {
 
         this.sourceManager = new SourceManager(dt, this.num_theta);
 
+        this.beamforming = new Beamforming(this.sensors, this.samplerate, this.blocksize, this.steeringVector.getCoordinates());
+
         // Pre-Allocation and Initialisation of signal arrays
         this.signalBlock = new Complex[this.blocksize];
         for (int iSample = 0; iSample < this.blocksize; iSample++) {
             this.signalBlock[iSample] = new Complex(0,0);
         }
         this.spec = new Complex[this.sensors][this.blocklen_half];
-        this.psd = new Complex[this.sensors][this.sensors][this.blocklen_half];
+        //this.psd = new Complex[this.sensors][this.sensors][this.blocklen_half];
 
     }
 
@@ -82,6 +84,8 @@ class Viwer {
             double[] vKalmanPeaks = this.sourceManager.trackSources(directions);
 
 
+            double[][] mAudioSources;
+
 
 
             
@@ -103,6 +107,8 @@ class Viwer {
 
         // Write results to file
         ResultWriter resultWriter = new ResultWriter("threshold.txt");
+        resultWriter.write(SourceManager.MAX_SOURCES);
+        resultWriter.write(this.num_theta);
         for (int iBlock = 0; iBlock < num_blocks; iBlock++) {
             resultWriter.write(mAccu[iBlock]);
         }

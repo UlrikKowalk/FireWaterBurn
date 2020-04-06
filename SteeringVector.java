@@ -5,13 +5,11 @@ class SteeringVector {
     private int blocksize;
     private int blocklen_half;
     private double[] frequencies;
-    private int samplerate;
     private double[][] coordinates;
 
     public SteeringVector(int sensors, int samplerate, int blocksize) {
 
         this.sensors = sensors;
-        this.samplerate = samplerate;
         this.blocksize = blocksize;
         this.blocklen_half = (int) (this.blocksize / 2 + 1);
 
@@ -43,9 +41,9 @@ class SteeringVector {
 
         for (int iSensor = 1; iSensor < this.sensors; iSensor++) {
             omega = -2f * Math.PI * (iSensor - 1) / (this.sensors - 1) - Math.PI;
-            this.coordinates[iSensor][0] = Math.PI * Math.cos(omega) * 0.01;
-            this.coordinates[iSensor][1] = Math.PI * Math.sin(omega) * 0.01;
-            this.coordinates[iSensor][2] = 0;
+            this.coordinates[iSensor][0] = Math.PI * Math.cos(omega) * 0.01f;
+            this.coordinates[iSensor][1] = Math.PI * Math.sin(omega) * 0.01f;
+            this.coordinates[iSensor][2] = 0f;
         }
     }
 
@@ -62,13 +60,14 @@ class SteeringVector {
             coords[iSensor][2] = this.coordinates[iSensor][2] - this.coordinates[this.sensors - 1][2];
         }
 
-        double[] v_unit = new double[] { 1, 0, 0 };
+        double[] v_unit = new double[] { 1f, 0f, 0f };
         double[] delays = new double[sensors];
 
         for (int iSensor = 0; iSensor < sensors; iSensor++) {
 
             delays[iSensor] = NaNtoZero(calculateNorm(coords[iSensor])
-                    * Math.cos(theta + vectorAngle(v_unit, coords[iSensor])) / SteeringVector.SPEED_OF_SOUND);
+                    * Math.cos(theta + vectorAngle(v_unit, coords[iSensor])) / SteeringVector.SPEED_OF_SOUND); 
+                           
         }
 
         return delays;

@@ -1,37 +1,37 @@
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.util.ArrayList;
+//import java.io.BufferedWriter;
+//import java.io.File;
+//import java.io.FileWriter;
+//import java.util.ArrayList;
 
 class Localisation {
 
     private int sensors;
     private int blocksize;
-    private int hopsize;
-    private double[][] coordinates;
-    private static final double SPEED_OF_SOUND = 343;
-    private static final int MAXSOURCES = 5;
+    //private int hopsize;
+    //private double[][] coordinates;
+    //private static final double SPEED_OF_SOUND = 343;
+    //private static final int MAXSOURCES = 5;
     private Complex[][][] psd;
-    private int nBins;
-    private Complex alphaCpx;
-    private Complex oneMinusAlphaCpx;
-    private int samplerate;
+    //private int nBins;
+    //private Complex alphaCpx;
+    //private Complex oneMinusAlphaCpx;
+    //private int samplerate;
     private Complex[][][] mTheta;
-    private double[] frequencies;
-    private Complex[][] complexZero;
-    private Complex[] complexSensorVector;
-    private Complex complexZeroNum;
+    //private double[] frequencies;
+    //private Complex[][] complexZero;
+    //private Complex[] complexSensorVector;
+    //private Complex complexZeroNum;
     private double alpha;
     private double oneMinusAlpha;
-    private double overlap;
+    //private double overlap;
     private int nLowerBin, nUpperBin;
     private int blocksize_half;
     private int num_theta;
     private double[] v_P_abs_sum;
-    private double[] angles;
+    //private double[] angles;
     private boolean firstBlock = true;
-    private double nMinMag;
-    private double dt;
+    //private double nMinMag;
+    //private double dt;
     private double[] theta;
     //private int max_theta;
     //private int step_theta;
@@ -47,7 +47,7 @@ class Localisation {
     public Localisation(int sensors, int samplerate, int blocksize) {
 
         this.sensors = sensors;
-        this.samplerate = samplerate;
+        //this.samplerate = samplerate;
         this.blocksize = blocksize;
 
         this.nLowerBin = 100;
@@ -55,10 +55,10 @@ class Localisation {
         this.nUpperBin = this.blocksize_half;
         
         this.alpha = 0.4f;
-        this.nMinMag = 1.2f;
+        //this.nMinMag = 1.2f;
         this.oneMinusAlpha = 1.0f - this.alpha;
-        this.alphaCpx = new Complex(this.alpha, 0);
-        this.oneMinusAlphaCpx = new Complex((1 - this.alpha), 0);
+        //this.alphaCpx = new Complex(this.alpha, 0);
+        //this.oneMinusAlphaCpx = new Complex((1 - this.alpha), 0);
 
         double max_theta = 360;
         double step_theta = 10;
@@ -136,15 +136,15 @@ class Localisation {
         return new Complex(real, 0f);
     }
 
-    private double[][] generateEye(int size) {
+    /*private double[][] generateEye(int size) {
         double[][] eye = new double[size][size];
         for (int iSize = 0; iSize < size; iSize++) {
             eye[iSize][iSize] = 1;
         }
         return eye;
-    }
+    }*/
 
-    private void generateComplexZero(int size) {
+    /*private void generateComplexZero(int size) {
         this.complexZero = new Complex[size][size];
         Complex zero = new Complex(0,0);
         for (int iRow = 0; iRow < size; iRow++) {
@@ -152,7 +152,7 @@ class Localisation {
                 this.complexZero[iRow][iCol] = zero;
             }
         }
-    }
+    }*/
 
     private Complex[][] generateEyeTimesComplex(int size, Complex number) {
         Complex[][] eye = new Complex[size][size];
@@ -167,7 +167,7 @@ class Localisation {
         return eye;
     }
 
-    private int argMax(double[] inVec) {
+    /*private int argMax(double[] inVec) {
         int arg = 0;
         double max = inVec[0];
         for (int idx = 0; idx < inVec.length; idx++) {
@@ -177,9 +177,9 @@ class Localisation {
             }
         }
         return arg;
-    }
+    }*/
 
-    private double max(double[] inVec) {
+    /*private double max(double[] inVec) {
         double max = inVec[0];
         for (int idx = 0; idx < inVec.length; idx++) {
             if (inVec[idx] > max) {
@@ -187,22 +187,22 @@ class Localisation {
             }
         }
         return max;
-    }
+    }*/
 
-    private void generateComplexSensorVector() {
+    /*private void generateComplexSensorVector() {
         this.complexSensorVector = new Complex[this.sensors];
         for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
             this.complexSensorVector[iSensor] = new Complex(0,0);
         }
-    }
+    }*/
 
-    protected void writeResult(String data, String filename) {
+    /*protected void writeResult(String data, String filename) {
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(filename, true));
             writer.append(data);
             writer.close();
         } catch (Exception e) { }
-    }
+    }*/
 
 
 

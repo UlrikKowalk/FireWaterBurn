@@ -51,7 +51,8 @@ public class SourceManager {
                     if (mPeaks[iPk][1] > this.thresholdPeak && this.NUM_SOURCES < SourceManager.MAX_SOURCES) {
                         addSource(mPeaks[iPk][0]);
                         firstResult[idxtmp] = mPeaks[iPk][0];
-                        this.vKalmanPeaks[idxtmp] = this.sources.get(this.sources.size()-1).iterate(mPeaks[iPk][0]);
+                        double[] tmp = this.sources.get(this.sources.size()-1).iterate(mPeaks[iPk][0]);
+                        this.vKalmanPeaks[idxtmp] = tmp[0];
                         idxtmp++;
                     }
                 }
@@ -94,13 +95,15 @@ public class SourceManager {
             if (candidateList.get(iSource).size() == 0) {
                 this.vKalmanPeaks[iSource] = this.sources.get(iSource).noUpdate();
             } else if (candidateList.get(iSource).size() == 1) {
-                this.vKalmanPeaks[iSource] = this.sources.get(iSource).iterate(vCandidates[0]);
+                double[] tmp = this.sources.get(iSource).iterate(vCandidates[0]);
+                this.vKalmanPeaks[iSource] = tmp[0];
             } else {
-                this.vKalmanPeaks[iSource] = this.sources.get(iSource).iterateWeighted(vCandidates);
+                double[] tmp = this.sources.get(iSource).iterateWeighted(vCandidates);
+                this.vKalmanPeaks[iSource] = tmp[0];
             }
              
             // Sources with more blocks without update than MAX_BLOCKS_WITHOUT_UPDATE are deleted
-            if (this.sources.get(iSource).getBlocksWithoutUpdate() >= MAX_BLOCKS_WITHOUT_UPDATE) {
+            if (this.sources.get(iSource).getBlocksWithoutUpdate() >= SourceManager.MAX_BLOCKS_WITHOUT_UPDATE) {
                 sourcesToDelete.add(iSource);
             }
         }
