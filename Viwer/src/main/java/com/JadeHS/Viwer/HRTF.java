@@ -11,7 +11,7 @@ import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.commo
 import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.*;
 
 
-class HRTF{
+class HRTF {
 
     private String filename_hrtf = "hrir/CH07IK25_0.mat";
     private String filename_directions = "hrir/directions.mat";
@@ -20,12 +20,16 @@ class HRTF{
     private MatFileReader matReader;
     private File file;
     private int num_theta;
+    private int num_theta_loc;
     private int fftlenHalf;
     private int nChannels = 2;
     private double[] directions;
+    private double theta;
+    private double thetaTransform;
+    private double thetaFactor;
     
 
-    public HRTF() {
+    public HRTF(int num_theta_loc) {
 
         // Obtain measured hrtf directions
         this.file = new File(this.filename_directions);
@@ -34,6 +38,10 @@ class HRTF{
         // Obtain measured hrtfs
         this.file = new File(this.filename_hrtf);
         readHRTF();
+
+        this.num_theta_loc = num_theta_loc;
+        this.thetaTransform = this.theta * this.num_theta / this.num_theta_loc;
+        this.thetaFactor = this.num_theta / this.num_theta_loc;
 
     }
 
@@ -80,6 +88,7 @@ class HRTF{
             for (int iDir = 0; iDir < this.num_theta; iDir++) {
                 this.directions[iDir] = data.get(iDir);
             }
+            this.theta = 360.f / this.num_theta;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -89,42 +98,45 @@ class HRTF{
 
     public double[][][] getHRTF(double direction) {
 
-        // Bin, Real/Imag, L/R 
+        // Bin, L/R, Real/Imag
         double[][][] tmp = new double[this.fftlenHalf][2][this.nChannels];
 
-        int[] directionIdx = new int[2];
-        double factorOfFirst = 1.0f;
+        int[] directionIdx = getDirectionIndex(direction);
+        double factorOfFirst = getDirectionFactor(direction, directionIdx);
 
         for (int iBin = 0; iBin < this.fftlenHalf; iBin++) {
             // Real, Left
-            tmp[iBin][0][0] = factorOfFirst * this.mHRTF_L[iBin][directionIdx[0]][0] + (1.0f - factorOfFirst) * this.mHRTF_L[iBin][directionIdx[1]][0];
+            tmp[iBin][0][0] = factorOfFirst * this.mHRTF_L[directionIdx[0]][iBin][0] + (1.0f - factorOfFirst) * this.mHRTF_L[directionIdx[1]][iBin][0];
             // Imag, Left
-            tmp[iBin][1][0] = factorOfFirst * this.mHRTF_L[iBin][directionIdx[0]][1] + (1.0f - factorOfFirst) * this.mHRTF_L[iBin][directionIdx[1]][1];
+            tmp[iBin][0][1] = factorOfFirst * this.mHRTF_L[directionIdx[0]][iBin][1] + (1.0f - factorOfFirst) * this.mHRTF_L[directionIdx[1]][iBin][1];
             // Real, Right
-            tmp[iBin][0][1] = factorOfFirst * this.mHRTF_R[iBin][directionIdx[0]][0] + (1.0f - factorOfFirst) * this.mHRTF_R[iBin][directionIdx[1]][0];
+            tmp[iBin][1][0] = factorOfFirst * this.mHRTF_R[directionIdx[0]][iBin][0] + (1.0f - factorOfFirst) * this.mHRTF_R[directionIdx[1]][iBin][0];
             // Imag, Right
-            tmp[iBin][1][1] = factorOfFirst * this.mHRTF_R[iBin][directionIdx[0]][1] + (1.0f - factorOfFirst) * this.mHRTF_R[iBin][directionIdx[1]][1];
+            tmp[iBin][1][1] = factorOfFirst * this.mHRTF_R[directionIdx[0]][iBin][1] + (1.0f - factorOfFirst) * this.mHRTF_R[directionIdx[1]][iBin][1];
         }
 
         return tmp;
     }
 
-    public int[] getDirectionIndex(double angle) {
-
-
-
+    private int[] getDirectionIndex(double angle) {
+        
+        int minIdx = (int) ( angle * this.thetaFactor);
 
         int[] tmp = new int[2];
+        if (minIdx == this.num_theta-1) {
+            // Cyclic value domain
+            tmp = new int[] {this.num_theta-1, 0};
+        } else {
+            tmp = new int[] {minIdx, minIdx+1};
+        }
+
         return tmp;
     }
 
-    public double getDirectionFactor(double angle) {
+    private double getDirectionFactor(double angle, int[] idx) {
 
+        return 1.0f - (angle * this.thetaTransform - (double) directions[idx[0]]) / this.theta;
 
-
-        return 1.0f;
     }
-
-
 
 }

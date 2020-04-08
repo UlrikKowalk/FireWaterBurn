@@ -75,6 +75,26 @@ class SteeringVector {
         return delays;
     }
 
+    public double[][][] generateDelayTensor(double theta) {
+        
+        // Sensors, Bins, Real/Imag
+        double[][][] mTheta = new double[this.sensors][blocklen_half][2];
+        double[] v_tau_theta = new double[this.sensors];
+
+        // Calculation of Delays
+        v_tau_theta = calculateDelays(theta);
+        
+        // Creation of Steering Vector
+        for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
+            for (int iFreq = 0; iFreq < blocklen_half; iFreq++) {
+                mTheta[iSensor][iFreq][0] = Math.cos(-2f * Math.PI * this.frequencies[iFreq] * v_tau_theta[iSensor]);
+                mTheta[iSensor][iFreq][1] = Math.sin(-2f * Math.PI * this.frequencies[iFreq] * v_tau_theta[iSensor]);
+            }
+        }
+        
+        return mTheta;
+    }
+
     public Complex[][][] generateDelayTensor(double[] theta) {
         
         Complex[][][] mTheta = new Complex[theta.length][this.sensors][blocklen_half];

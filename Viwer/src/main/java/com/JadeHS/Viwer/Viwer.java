@@ -35,11 +35,11 @@ class Viwer {
         this.localisation = new Localisation(this.sensors, this.samplerate, this.blocksize);
         this.num_theta = this.localisation.getNumTheta();
 
-        this.dt = Kalman.calculateDt(this.blocksize, this.samplerate);
+        this.dt = Kalman.calculateDt(this.hopsize, this.samplerate);
 
-        this.sourceManager = new SourceManager(dt, this.num_theta);
+        this.sourceManager = new SourceManager(this.dt, this.num_theta);
 
-        this.beamforming = new Beamforming(this.sensors, this.samplerate, this.blocksize, this.steeringVector.getCoordinates());
+        this.beamforming = new Beamforming(this.sensors, this.samplerate, this.blocksize, this.steeringVector.getCoordinates(), this.num_theta);
 
         // Pre-Allocation and Initialisation of signal arrays
         this.signalBlock = new Complex[this.blocksize];
@@ -54,17 +54,24 @@ class Viwer {
     public double[][] analyseAndFilter(double[][] sensor_data) {
 
         int length = sensor_data[0].length;
-        int num_blocks = (int) Math.floor((length - blocksize) / hopsize);
+        int num_blocks = (int) Math.floor((length - blocksize) / this.hopsize);
+
+        //num_blocks = 300;
 
         double[] window = hann(this.blocksize);
+        for (int iSample = 0; iSample < this.blocksize; iSample++) {
+            window[iSample] = Math.sqrt(window[iSample]);
+        }
 
         double[][] mAccu = new double[num_blocks][10];
+
+        double[][] mOut = new double[length][2];
         
-        int idx_in, idx_out;
+        int idx_in, idx_out = 0;
         
         for (int iBlock = 0; iBlock < num_blocks; iBlock++) {
 
-            idx_in = (int) (iBlock * hopsize);
+            idx_in = (int) (iBlock * this.hopsize);
             idx_out = (int) (idx_in + blocksize);
 
             // Generation of the Spectrum
@@ -85,20 +92,15 @@ class Viwer {
             // Tracking
             double[] vKalmanPeaks = this.sourceManager.trackSources(directions);
 
+            // Beamforming and Positioning
+            double[][] mAudioOut = beamforming.filter(this.spec, vKalmanPeaks);
 
-            double[][] mAudioSources;
-
-
-
-            
-            // Write results to matrix
-            for (int iSource = 0; iSource < vKalmanPeaks.length; iSource++) {
-                mAccu[iBlock][iSource] = vKalmanPeaks[iSource];
+            for (int iSample = 0; iSample < this.blocksize; iSample++) {
+                mOut[idx_in + iSample][0] = mOut[idx_in + iSample][0] + mAudioOut[iSample][0] * window[iSample];
+                mOut[idx_in + iSample][1] = mOut[idx_in + iSample][1] + mAudioOut[iSample][1] * window[iSample];
             }
-            for (int iSource = vKalmanPeaks.length; iSource < SourceManager.MAX_SOURCES; iSource++) {
-                mAccu[iBlock][iSource] = -255.0f;
-            }
-     
+
+        
         }
 
 
@@ -108,13 +110,19 @@ class Viwer {
 
 
         // Write results to file
-        ResultWriter resultWriter = new ResultWriter("threshold.txt");
+        /*ResultWriter resultWriter = new ResultWriter("threshold.txt");
         resultWriter.write(SourceManager.MAX_SOURCES);
         resultWriter.write(this.num_theta);
         for (int iBlock = 0; iBlock < num_blocks; iBlock++) {
             resultWriter.write(mAccu[iBlock]);
-        }
+        }*/
 
+        // Write results to file
+        ResultWriter resultWriter = new ResultWriter("Viwer_Out.txt");
+        for (int iSample = 0; iSample < idx_out; iSample++) {
+            resultWriter.write(mOut[iSample][0]);
+            resultWriter.write(mOut[iSample][1]);
+        }
 
 
 

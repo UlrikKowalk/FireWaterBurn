@@ -112,13 +112,15 @@ class SourceManager {
 
         deleteSource(sourcesToDelete);
 
-        double[] vResult = new double[2 * SourceManager.MAX_SOURCES];
+        //double[] vResult = new double[2 * SourceManager.MAX_SOURCES];
+        double[] vResult = new double[this.NUM_SOURCES];
         for (int iSource = 0; iSource < this.NUM_SOURCES; iSource++) {
             vResult[iSource] = this.vKalmanPeaks[iSource];
         }
-        for (int iSource = this.NUM_SOURCES; iSource < 2 * SourceManager.MAX_SOURCES; iSource++) {
+        /*for (int iSource = this.NUM_SOURCES; iSource < 2 * SourceManager.MAX_SOURCES; iSource++) {
             vResult[iSource] = -255.0f;
-        }
+        }*/
+
         return vResult;
     }
 

@@ -33,8 +33,8 @@ class Kalman {
 
     }
 
-    public static double calculateDt(int blocksize, int samplingrate) {
-        return ((double) blocksize) / samplingrate; 
+    public static double calculateDt(int hopsize, int samplingrate) {
+        return ((double) hopsize) / samplingrate; 
     }
 
     private void resetRemaining() {

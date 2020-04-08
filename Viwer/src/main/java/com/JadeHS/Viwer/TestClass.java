@@ -11,7 +11,7 @@ class TestClass {
         print("Channels: " + wave.getNumChannels() + ", Length: " + wave.getLength() + ", Samplerate: " + wave.getSampleRate());
         
         int blocksize = 512;
-        double overlap = 0.0;
+        double overlap = 0.5;
         
         long startTime = System.nanoTime();
 
