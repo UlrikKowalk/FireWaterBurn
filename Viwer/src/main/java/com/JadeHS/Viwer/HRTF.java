@@ -1,13 +1,7 @@
 package com.JadeHS.Viwer;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Map;
-
-//import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io.MatFileReader;
-//import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io.MatFileHeader;
 import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io.*;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.common.*;
 import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.*;
 
 
@@ -113,6 +107,17 @@ class HRTF {
             tmp[iBin][1][0] = factorOfFirst * this.mHRTF_R[directionIdx[0]][iBin][0] + (1.0f - factorOfFirst) * this.mHRTF_R[directionIdx[1]][iBin][0];
             // Imag, Right
             tmp[iBin][1][1] = factorOfFirst * this.mHRTF_R[directionIdx[0]][iBin][1] + (1.0f - factorOfFirst) * this.mHRTF_R[directionIdx[1]][iBin][1];
+            
+            /*
+            // Real, Left
+            tmp[iBin][0][0] = this.mHRTF_L[directionIdx[0]][iBin][0];
+            // Imag, Left
+            tmp[iBin][0][1] = this.mHRTF_L[directionIdx[0]][iBin][1];
+            // Real, Right
+            tmp[iBin][1][0] = this.mHRTF_R[directionIdx[0]][iBin][0];
+            // Imag, Right
+            tmp[iBin][1][1] = this.mHRTF_R[directionIdx[0]][iBin][1];
+            */
         }
 
         return tmp;

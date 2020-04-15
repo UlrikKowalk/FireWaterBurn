@@ -41,6 +41,10 @@ class Beamforming {
             double[][][] hrtfCoefficients = this.hrtf.getHRTF(directions[iDir]);
             // Bins, Real/Imag
             double[][] monoSpec = new double[this.fftlenHalf][2];
+            for (int iBin = 0; iBin < this.fftlenHalf; iBin++) {
+                monoSpec[iBin][0] = 0.0f;
+                monoSpec[iBin][1] = 0.0f;
+            }
 
             // Beamforming
             for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
@@ -65,55 +69,28 @@ class Beamforming {
             }
         }
 
-        // Write results to file
-        /*ResultWriter resultWriter = new ResultWriter("Viwer_Out.txt");
-        for (int iSample = 0; iSample < this.fftlenHalf; iSample++) {
-            resultWriter.write(stereoSpec[iSample][0][0]);
-            resultWriter.write(stereoSpec[iSample][0][1]);
-        }
-        for (int iSample = 0; iSample < this.fftlenHalf; iSample++) {
-            resultWriter.write(stereoSpec[iSample][1][0]);
-            resultWriter.write(stereoSpec[iSample][1][1]);
-        }*/
-
         // IFFT
         Complex[] tmp = new Complex[this.blocksize];
+
         // Left
-        /*for (int iBin = 0; iBin < this.fftlenHalf; iBin++) {
-            tmp[iBin] = new Complex(stereoSpec[iBin][0][0], stereoSpec[iBin][0][1]);
-            tmp[this.blocksize - iBin - 1] = new Complex(stereoSpec[iBin][0][0], stereoSpec[iBin][0][1]);
-        }*/
-
-
         for (int iBin = 0; iBin < this.fftlenHalf; iBin++) {
             tmp[iBin] = new Complex(stereoSpec[iBin][0][0], stereoSpec[iBin][0][1]);
         }
         for (int iBin = 1; iBin < this.fftlenHalf-1; iBin++) {
             tmp[blocksize - iBin] = new Complex(stereoSpec[iBin][0][0], -stereoSpec[iBin][0][1]);
         }
-
-
-
-
-
         tmp = FFT.ifft(tmp);
         for (int iSample = 0; iSample < this.blocksize; iSample++) {
             stereoOut[iSample][0] = tmp[iSample].re;
         }
-        // Right
-        /*for (int iBin = 0; iBin < this.fftlenHalf; iBin++) {
-            tmp[iBin] = new Complex(stereoSpec[iBin][1][0], stereoSpec[iBin][1][1]);
-            tmp[this.blocksize - iBin - 1] = new Complex(stereoSpec[iBin][1][0], stereoSpec[iBin][1][1]);
-        }*/
 
+        // Right
         for (int iBin = 0; iBin < this.fftlenHalf; iBin++) {
             tmp[iBin] = new Complex(stereoSpec[iBin][1][0], stereoSpec[iBin][1][1]);
         }
         for (int iBin = 1; iBin < this.fftlenHalf-1; iBin++) {
             tmp[blocksize - iBin] = new Complex(stereoSpec[iBin][1][0], -stereoSpec[iBin][1][1]);
         }
-
-
         tmp = FFT.ifft(tmp);
         for (int iSample = 0; iSample < this.blocksize; iSample++) {
             stereoOut[iSample][1] = tmp[iSample].re;

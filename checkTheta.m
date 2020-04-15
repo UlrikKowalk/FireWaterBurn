@@ -62,8 +62,6 @@ tic;
 for iBlock = 1 : nBlocks
    
     vLoudness(iBlock) = rms(a(:, iBlock));
-    
-%     a(:, iBlock) = a(:, iBlock) / max(a(:, iBlock));%vLoudness(iBlock).^1.4;
     a(:, iBlock) = a(:, iBlock) / vLoudness(iBlock);
 
     
@@ -82,13 +80,8 @@ for iBlock = 1 : nBlocks
    
 end
  
-
-
-
-% vDirections = linspace(0, 360-nTheta, nTheta);
 hFig1 = figure();
-hAx1 = subplot(211);
-% imagesc(vTimeBlock, 0:nStep:(360-nTheta),  (log10(((a)).^200))); 
+hAx1 = subplot(311);
 imagesc(vTimeBlock, (0:(nTheta-1))*nStep,  log10(a + (min(min(a)))*sign(min(min(a)))+1).^2); 
 
 nMagMin = 1.2;
@@ -127,7 +120,7 @@ ylabel('DOA [°]');
 
 
 
-subplot(212);
+subplot(312);
 plot(vTime, vSignal);
 xlabel('Time [s]');
 axis tight;
@@ -152,6 +145,23 @@ for iEntry = 1:length(stEntries)
     
 end
 hold off;
+
+
+%% Plotting the restored image
+
+sFileName = 'Viwer_Out.txt';
+
+load(sFileName);
+data = [Viwer_Out(1:2:end)', Viwer_Out(2:2:end)'];
+
+subplot(313);
+plot(data);
+axis tight;
+
+
+audiowrite('ViwerOut.wav', data/max(max(abs(data))), 8000);
+
+
 
 
 % 
@@ -191,7 +201,6 @@ if bSave
     print('Source_Tracking','-dpdf','-r300');
     close all;
 end
-
 
 fprintf('Done.\n');
 toc;

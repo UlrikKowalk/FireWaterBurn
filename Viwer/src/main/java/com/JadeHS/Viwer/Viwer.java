@@ -47,16 +47,12 @@ class Viwer {
             this.signalBlock[iSample] = new Complex(0,0);
         }
         this.spec = new Complex[this.sensors][this.blocklen_half];
-        //this.psd = new Complex[this.sensors][this.sensors][this.blocklen_half];
-
     }
 
     public double[][] analyseAndFilter(double[][] sensor_data) {
 
         int length = sensor_data[0].length;
         int num_blocks = (int) Math.floor((length - blocksize) / this.hopsize);
-
-        //num_blocks = 300;
 
         double[] window = hann(this.blocksize);
         for (int iSample = 0; iSample < this.blocksize; iSample++) {
@@ -78,7 +74,7 @@ class Viwer {
             for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
                 for (int iSample = idx_in; iSample < idx_out; iSample++) {
                     signalBlock[iSample - idx_in].re = sensor_data[iSensor][iSample] * window[iSample - idx_in];
-                    signalBlock[iSample - idx_in].im = 0;
+                    signalBlock[iSample - idx_in].im = 0.0f;
                 }
                 InplaceFFT.fft(signalBlock);
                 for (int iFreq = 0; iFreq < this.blocklen_half; iFreq++) {
@@ -100,40 +96,37 @@ class Viwer {
                 mOut[idx_in + iSample][1] = mOut[idx_in + iSample][1] + mAudioOut[iSample][1] * window[iSample];
             }
 
+
+            // Write directions to matrix
+            for (int iSource = 0; iSource < directions.length; iSource++) {
+                mAccu[iBlock][iSource] = directions[iSource][0];
+            }
+            // Write Kalman filtered source directions to matrix
+            for (int iSource = 0; iSource < vKalmanPeaks.length; iSource++) {
+                mAccu[iBlock][SourceManager.MAX_SOURCES + iSource] = vKalmanPeaks[iSource];
+            }
         
         }
 
-
-
-
-
-
-
-        // Write results to file
-        /*ResultWriter resultWriter = new ResultWriter("threshold.txt");
+        
+        // Write directions (normal, filtered) to file
+        ResultWriter resultWriter = new ResultWriter("threshold.txt");
         resultWriter.write(SourceManager.MAX_SOURCES);
         resultWriter.write(this.num_theta);
         for (int iBlock = 0; iBlock < num_blocks; iBlock++) {
             resultWriter.write(mAccu[iBlock]);
-        }*/
+        }
 
-        // Write results to file
-        ResultWriter resultWriter = new ResultWriter("Viwer_Out.txt");
+        // Write audio data to file
+        resultWriter = new ResultWriter("Viwer_Out.txt");
         for (int iSample = 0; iSample < idx_out; iSample++) {
             resultWriter.write(mOut[iSample][0]);
             resultWriter.write(mOut[iSample][1]);
         }
 
-
-
-
-
-
-
         double[][] tmp = new double[0][0];
 
         return tmp;
-
     }
 
     private double[] hann(int blocksize) {

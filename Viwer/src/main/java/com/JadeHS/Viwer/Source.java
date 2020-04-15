@@ -2,7 +2,6 @@ package com.JadeHS.Viwer;
 
 public class Source {
 
-    private SourceManager context;
     private Kalman kalman;
     private double nAngle;
     private double nSpread;
@@ -10,23 +9,22 @@ public class Source {
     private int blocksWithoutUpdate = 0;
     private double alpha = 0.95f;
 
-    public Source(double angle, SourceManager sourceManager, double dt, double nSpread) {
+    public Source(double angle, double dt, double nSpread) {
 
         this.nAngle = angle;
-        this.context = sourceManager;
         this.nSpread = nSpread;
         this.kalman = new Kalman(dt, this.nAngle);
 
     }
 
 
-    public double[] iterate(double nCandidate) {
+    public double iterate(double nCandidate) {
         this.blocksWithoutUpdate = 0;
         this.nAngle = (1.0f - this.alpha) * this.kalman.iterate(nCandidate) + this.alpha * this.nAngle;
-        return new double[] {this.nAngle, Math.pow(0.5f, this.blocksWithoutUpdate)};
+        return this.nAngle;
     }
 
-    public double[] iterateWeighted(double[] vCandidates) {
+    public double iterateWeighted(double[] vCandidates) {
 
         // Account for cyclic range 
         int nCandidates = vCandidates.length;
@@ -65,7 +63,7 @@ public class Source {
  
     public double noUpdate() {
         this.blocksWithoutUpdate++;
-        return kalman.getEstimate();
+        return this.kalman.getEstimate();
     }
 
     public int getBlocksWithoutUpdate() {

@@ -5,7 +5,8 @@ import java.util.ArrayList;
 class SourceManager {
 
     public final static int MAX_SOURCES = 5;
-    public final static int MAX_BLOCKS_WITHOUT_UPDATE = 5;
+    public final static double MAX_SECONDS_WITHOUT_UPDATE = 0.5f;
+    public int MAX_BLOCKS_WITHOUT_UPDATE;
     private int NUM_SOURCES = 0;
 
     private ArrayList<Source> sources;
@@ -13,8 +14,8 @@ class SourceManager {
 
     private double dt;
     private double num_theta;
-    private double thresholdProbability = 0.05f;
-    private double thresholdPeak = 1.8f;
+    private double thresholdProbability = 0.1f;//0.05f;
+    private double thresholdPeak = 1.5;//1.8f;
 
     private double[] vKalmanPeaks;
     private double[] vKalmanPeaksWeighted;
@@ -25,6 +26,7 @@ class SourceManager {
         this.dt = dt;
         this.num_theta = num_theta;
         this.sources = new ArrayList<>();
+        this.MAX_BLOCKS_WITHOUT_UPDATE = (int) (SourceManager.MAX_SECONDS_WITHOUT_UPDATE / this.dt);
         
         this.vKalmanPeaks = new double[SourceManager.MAX_SOURCES];
         this.vKalmanPeaksWeighted = new double[SourceManager.MAX_SOURCES];
@@ -47,14 +49,14 @@ class SourceManager {
 
             if (this.NUM_SOURCES == 0) {
                 // No sources yet -> every peak is a potential new source
-                double[] firstResult = new double[2 * SourceManager.MAX_SOURCES];
+                double[] firstResult = new double[Math.min(mPeaks[0].length, SourceManager.MAX_SOURCES)];
                 int idxtmp = 0;
                 for (int iPk = 0; iPk < mPeaks[0].length; iPk++) {
                     if (mPeaks[iPk][1] > this.thresholdPeak && this.NUM_SOURCES < SourceManager.MAX_SOURCES) {
                         addSource(mPeaks[iPk][0]);
                         firstResult[idxtmp] = mPeaks[iPk][0];
-                        double[] tmp = this.sources.get(this.sources.size()-1).iterate(mPeaks[iPk][0]);
-                        this.vKalmanPeaks[idxtmp] = tmp[0];
+                        double tmp = this.sources.get(this.sources.size()-1).iterate(mPeaks[iPk][0]);
+                        this.vKalmanPeaks[idxtmp] = tmp;
                         idxtmp++;
                     }
                 }
@@ -97,35 +99,31 @@ class SourceManager {
             if (candidateList.get(iSource).size() == 0) {
                 this.vKalmanPeaks[iSource] = this.sources.get(iSource).noUpdate();
             } else if (candidateList.get(iSource).size() == 1) {
-                double[] tmp = this.sources.get(iSource).iterate(vCandidates[0]);
-                this.vKalmanPeaks[iSource] = tmp[0];
+                double tmp = this.sources.get(iSource).iterate(vCandidates[0]);
+                this.vKalmanPeaks[iSource] = tmp;
             } else {
-                double[] tmp = this.sources.get(iSource).iterateWeighted(vCandidates);
-                this.vKalmanPeaks[iSource] = tmp[0];
+                double tmp = this.sources.get(iSource).iterateWeighted(vCandidates);
+                this.vKalmanPeaks[iSource] = tmp;
             }
              
             // Sources with more blocks without update than MAX_BLOCKS_WITHOUT_UPDATE are deleted
-            if (this.sources.get(iSource).getBlocksWithoutUpdate() >= SourceManager.MAX_BLOCKS_WITHOUT_UPDATE) {
+            if (this.sources.get(iSource).getBlocksWithoutUpdate() >= this.MAX_BLOCKS_WITHOUT_UPDATE) {
                 sourcesToDelete.add(iSource);
             }
         }
 
         deleteSource(sourcesToDelete);
 
-        //double[] vResult = new double[2 * SourceManager.MAX_SOURCES];
         double[] vResult = new double[this.NUM_SOURCES];
         for (int iSource = 0; iSource < this.NUM_SOURCES; iSource++) {
             vResult[iSource] = this.vKalmanPeaks[iSource];
         }
-        /*for (int iSource = this.NUM_SOURCES; iSource < 2 * SourceManager.MAX_SOURCES; iSource++) {
-            vResult[iSource] = -255.0f;
-        }*/
 
         return vResult;
     }
 
     private void addSource(double nPeak) {
-        this.sources.add(new Source(nPeak, this, this.dt, this.num_theta));
+        this.sources.add(new Source(nPeak, this.dt, this.num_theta));
         this.NUM_SOURCES++;
         this.candidateList.add(new ArrayList<Double>());
     }
