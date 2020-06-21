@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 // A Java program to find a peak element element using divide and conquer
   

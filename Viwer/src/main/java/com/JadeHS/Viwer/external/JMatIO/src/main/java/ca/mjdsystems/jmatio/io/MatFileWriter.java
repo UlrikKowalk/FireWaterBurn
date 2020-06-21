@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
+package com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -12,13 +12,13 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.common.MatDataTypes;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLArray;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLCell;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLChar;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLNumericArray;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLSparse;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLStructure;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.common.MatDataTypes;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLArray;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLCell;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLChar;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLNumericArray;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLSparse;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLStructure;
 
 
 /**

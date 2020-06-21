@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types;
+package com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types;
 
 import java.util.Arrays;
 

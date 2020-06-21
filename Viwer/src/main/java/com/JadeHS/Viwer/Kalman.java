@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 import java.util.Random;
 
@@ -10,6 +10,7 @@ class Kalman {
 
     private double dt;
 
+    // MatrixVoice: 1e-3f
     private double nObservationError = 1e-3f;
     private double nObservation;
 
@@ -17,9 +18,10 @@ class Kalman {
     private double[] vEstimate = {0.0f, 0.0f};
 
     private double[][] mA;
-    private double[][] mQ = newZeroMatrix(2, 2);
-    private double[][] mProcessError = {{1.0f, 0.0f}, {0.0f, 1.0f}};
-    private double[][] mStateCovariance = newZeroMatrix(2, 2);
+    private double[][] mQ = {{0f, 0f}, {0f, 0f}};
+    // MatrixVoice: {{1.0f, 0.0f}, {0.0f, 1.0f}};
+    private double[][] mProcessError = {{1.0f, 1.0f}, {0.0f, 1.0f}};
+    private double[][] mStateCovariance = {{0.0f, 0.0f}, {0.0f, 0.0f}};
 
     private Random oRandom = new Random();
 

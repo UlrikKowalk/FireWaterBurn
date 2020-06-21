@@ -1,21 +1,27 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 class SourceManager {
 
     public final static int MAX_SOURCES = 5;
-    public final static double MAX_SECONDS_WITHOUT_UPDATE = 0.5f;
+    public final static double MAX_SECONDS_WITHOUT_UPDATE = 2.0f;
     public int MAX_BLOCKS_WITHOUT_UPDATE;
     private int NUM_SOURCES = 0;
 
     private ArrayList<Source> sources;
     private CandidateList candidateList;
 
+    // MatrixVoice: 2.0f, 0.05f, 1.8f
+
+
     private double dt;
     private double num_theta;
-    private double thresholdProbability = 0.1f;//0.05f;
-    private double thresholdPeak = 1.5;//1.8f;
+    private double thresholdProbability = 0.01f;//0.05f;
+    private double thresholdPeak = -60.0f;//1.8f; // imag: 2.0f;
 
     private double[] vKalmanPeaks;
     private double[] vKalmanPeaksWeighted;
@@ -38,28 +44,40 @@ class SourceManager {
 
     public double[] trackSources(double[][] mPeaks) {
 
+        mPeaks = sortPeaks(mPeaks);
+
         this.candidateList = new CandidateList();
         ArrayList<Integer> sourcesToDelete = new ArrayList<>();
+
+        int nPeaks = Math.min(SourceManager.MAX_SOURCES, mPeaks.length);
 
         for (int iSource = 0; iSource < this.NUM_SOURCES; iSource++) {
             this.candidateList.add(new ArrayList<Double>());
         }
 
-        for (int iPeak = 0; iPeak < mPeaks[0].length; iPeak++) {
+        //for (int iPeak = 0; iPeak < mPeaks.length; iPeak++) {
+        for (int iPeak = 0; iPeak < nPeaks; iPeak++) {
 
             if (this.NUM_SOURCES == 0) {
                 // No sources yet -> every peak is a potential new source
-                double[] firstResult = new double[Math.min(mPeaks[0].length, SourceManager.MAX_SOURCES)];
+                double[] tmpResult = new double[Math.min(mPeaks.length, SourceManager.MAX_SOURCES)];
                 int idxtmp = 0;
-                for (int iPk = 0; iPk < mPeaks[0].length; iPk++) {
+                for (int iPk = 0; iPk < mPeaks.length; iPk++) {
                     if (mPeaks[iPk][1] > this.thresholdPeak && this.NUM_SOURCES < SourceManager.MAX_SOURCES) {
                         addSource(mPeaks[iPk][0]);
-                        firstResult[idxtmp] = mPeaks[iPk][0];
+                        tmpResult[idxtmp] = mPeaks[iPk][0];
                         double tmp = this.sources.get(this.sources.size()-1).iterate(mPeaks[iPk][0]);
                         this.vKalmanPeaks[idxtmp] = tmp;
                         idxtmp++;
                     }
                 }
+
+                double[] firstResult = new double[idxtmp];
+                for (int iPk = 0; iPk < idxtmp; iPk++){
+                    firstResult[iPk] = tmpResult[iPk];
+                }
+                firstResult = new double[0]; // Fist time a source is seen -> no notice, let's see if it holds
+
                 return firstResult;
 
             } else {
@@ -97,7 +115,12 @@ class SourceManager {
             }
           
             if (candidateList.get(iSource).size() == 0) {
-                this.vKalmanPeaks[iSource] = this.sources.get(iSource).noUpdate();
+                // Remove spurious peaks
+                if (this.sources.get(iSource).getIsNew()) {
+                    sourcesToDelete.add(iSource);
+                } else {
+                    this.vKalmanPeaks[iSource] = this.sources.get(iSource).noUpdate();
+                }
             } else if (candidateList.get(iSource).size() == 1) {
                 double tmp = this.sources.get(iSource).iterate(vCandidates[0]);
                 this.vKalmanPeaks[iSource] = tmp;
@@ -122,6 +145,19 @@ class SourceManager {
         return vResult;
     }
 
+    private double[][] sortPeaks(double[][] mPeaks) {
+        java.util.Arrays.sort(mPeaks, new java.util.Comparator<double[]>() {
+            public int compare(double[] a, double[] b) {
+                return Double.compare(a[1], b[1]);
+            }
+        });
+        return mPeaks;
+    }
+
+    public int getNumSources() {
+        return this.NUM_SOURCES;
+    }
+
     private void addSource(double nPeak) {
         this.sources.add(new Source(nPeak, this.dt, this.num_theta));
         this.NUM_SOURCES++;
@@ -135,6 +171,11 @@ class SourceManager {
                 this.NUM_SOURCES--;
             }
         }
+    }
+
+    private void deleteSource(Set<Integer> delete) {
+        this.sources.removeAll(delete);
+        this.NUM_SOURCES = this.sources.size();
     }
 
     private double[] getProbabilities(double nCandidate) {

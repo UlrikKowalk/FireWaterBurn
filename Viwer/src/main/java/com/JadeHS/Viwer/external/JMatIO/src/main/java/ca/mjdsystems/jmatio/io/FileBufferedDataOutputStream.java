@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
+package com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,7 +7,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLArray;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLArray;
 
 
 /**

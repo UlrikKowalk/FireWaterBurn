@@ -3,26 +3,27 @@ function [pos , vel] = testkal(Xtrue, dt)
     Nsamples = length(Xtrue)-1;
     % Previous state (initial guess): Our guess is that the train starts at 0 with velocity
     % that equals to 50% of the real velocity
-    Xk = [0; 
-    .5*1];
+    Xk = [Xtrue(1); 
+         .5*1];
     % Current state estimate
 %     Xk=[];
     % Motion equation: Xk = Phi*Xk_prev + Noise, that is Xk(n) = Xk(n-1) + Vk(n-1) * dt
     % Of course, V is not measured, but it is estimated
     % Phi represents the dynamics of the system: it is the motion equation
     Phi = [1 dt;
-       0  1];
+           0  1];
     % The error matrix (or the confidence matrix): P states whether we should 
     % give more weight to the new measurement or to the model estimate 
     sigma_model = 1;
     % P = sigma^2*G*G';
     P = [sigma_model^2             0;
-                 0 sigma_model^2];
+                 0     sigma_model^2];
     % Q is the process noise covariance. It represents the amount of
     % uncertainty in the model. In our case, we arbitrarily assume that the model is perfect (no
     % acceleration allowed for the train, or in other words - any acceleration is considered to be a noise)
     Q = [0 0;
      0 0];
+ 
     % M is the measurement matrix. 
     % We measure X, so M(1) = 1
     % We do not measure V, so M(2)= 0

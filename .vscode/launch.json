@@ -4,11 +4,12 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+
         {
             "type": "java",
             "name": "CodeLens (Launch) - TestClass",
             "request": "launch",
-            "mainClass": "com.JadeHS.Viwer.TestClass",
+            "mainClass": "com.jadehs.viwer.TestClass",
             "projectName": "Viwer"
         }
    

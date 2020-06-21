@@ -1,10 +1,11 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 class TestClass {
 
     public static void main(String[] args) {
 
-        String filename = "media/0_recording_joined.wav";
+        String filename = "media/Boomerang.wav";
+        //String filename = "media/0_recording_joined.wav";
         OpenWaveFile wave = new OpenWaveFile(filename);
         wave.open();
 
@@ -12,11 +13,13 @@ class TestClass {
         
         int blocksize = 512;
         double overlap = 0.5;
-        
+        String arrayName = "Boomerang";
+        //String arrayName = "MatrixVoice";
+
         long startTime = System.nanoTime();
 
 
-        Viwer viwer = new Viwer(wave.getSampleRate(), blocksize, overlap, wave.getNumChannels());
+        Viwer viwer = new Viwer(wave.getSampleRate(), blocksize, overlap, wave.getNumChannels(), arrayName);
         viwer.analyseAndFilter(wave.returnAudio());
    
 

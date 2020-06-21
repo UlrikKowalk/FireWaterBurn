@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 class Viwer {
 
@@ -11,6 +11,8 @@ class Viwer {
     private double overlap;
     private double dt;
 
+    private int margin = 20;
+
     private Complex[] signalBlock;
     private Complex[][] spec;
     //private Complex[][][] psd;
@@ -20,7 +22,9 @@ class Viwer {
     private SteeringVector steeringVector;
     private Beamforming beamforming;
 
-    public Viwer(int samplerate, int blocksize, double overlap, int sensors) {
+    private boolean writeAudio = false;
+
+    public Viwer(int samplerate, int blocksize, double overlap, int sensors, String arrayName) {
 
         this.samplerate = samplerate;
         this.blocksize = blocksize;
@@ -30,16 +34,15 @@ class Viwer {
         this.hopsize = (int) (this.blocksize * (1.0 - this.overlap));
         this.blocklen_half = (int) (this.blocksize / 2 + 1);
         
-        this.steeringVector = new SteeringVector(this.sensors, this.samplerate, blocksize);
-
-        this.localisation = new Localisation(this.sensors, this.samplerate, this.blocksize);
+        this.localisation = new Localisation(this.sensors, this.samplerate, this.blocksize, arrayName);
         this.num_theta = this.localisation.getNumTheta();
 
         this.dt = Kalman.calculateDt(this.hopsize, this.samplerate);
 
         this.sourceManager = new SourceManager(this.dt, this.num_theta);
 
-        this.beamforming = new Beamforming(this.sensors, this.samplerate, this.blocksize, this.steeringVector.getCoordinates(), this.num_theta);
+        this.steeringVector = new SteeringVector(this.sensors, this.samplerate, this.blocksize, arrayName);
+        this.beamforming = new Beamforming(this.sensors, this.samplerate, this.blocksize, this.steeringVector.getCoordinates(), this.num_theta, arrayName);
 
         // Pre-Allocation and Initialisation of signal arrays
         this.signalBlock = new Complex[this.blocksize];
@@ -59,9 +62,11 @@ class Viwer {
             window[iSample] = Math.sqrt(window[iSample]);
         }
 
-        double[][] mAccu = new double[num_blocks][10];
+        double[][] mAccu = new double[num_blocks][this.margin + SourceManager.MAX_SOURCES];
 
         double[][] mOut = new double[length][2];
+
+        int[] numSources = new int[num_blocks];
         
         int idx_in, idx_out = 0;
         
@@ -88,42 +93,48 @@ class Viwer {
             // Tracking
             double[] vKalmanPeaks = this.sourceManager.trackSources(directions);
 
-            // Beamforming and Positioning
-            double[][] mAudioOut = beamforming.filter(this.spec, vKalmanPeaks);
+            if (this.writeAudio) {
+                // Beamforming and Positioning
+                double[][] mAudioOut = beamforming.filter(this.spec, vKalmanPeaks);
 
-            for (int iSample = 0; iSample < this.blocksize; iSample++) {
-                mOut[idx_in + iSample][0] = mOut[idx_in + iSample][0] + mAudioOut[iSample][0] * window[iSample];
-                mOut[idx_in + iSample][1] = mOut[idx_in + iSample][1] + mAudioOut[iSample][1] * window[iSample];
+                for (int iSample = 0; iSample < this.blocksize; iSample++) {
+                    mOut[idx_in + iSample][0] = mOut[idx_in + iSample][0] + mAudioOut[iSample][0] * window[iSample];
+                    mOut[idx_in + iSample][1] = mOut[idx_in + iSample][1] + mAudioOut[iSample][1] * window[iSample];
+                }
             }
 
+            int maxdirs = Math.min(directions.length, this.margin);
 
             // Write directions to matrix
-            for (int iSource = 0; iSource < directions.length; iSource++) {
-                mAccu[iBlock][iSource] = directions[iSource][0];
+            for (int iDir = 0; iDir < maxdirs; iDir++) {
+                mAccu[iBlock][iDir] = directions[iDir][0];
             }
             // Write Kalman filtered source directions to matrix
             for (int iSource = 0; iSource < vKalmanPeaks.length; iSource++) {
-                mAccu[iBlock][SourceManager.MAX_SOURCES + iSource] = vKalmanPeaks[iSource];
+                mAccu[iBlock][this.margin + iSource] = vKalmanPeaks[iSource];
             }
         
+            numSources[iBlock] = this.sourceManager.getNumSources();
         }
 
-        
         // Write directions (normal, filtered) to file
         ResultWriter resultWriter = new ResultWriter("threshold.txt");
         resultWriter.write(SourceManager.MAX_SOURCES);
         resultWriter.write(this.num_theta);
         for (int iBlock = 0; iBlock < num_blocks; iBlock++) {
+            resultWriter.write(numSources[iBlock]);
             resultWriter.write(mAccu[iBlock]);
         }
-
-        // Write audio data to file
-        resultWriter = new ResultWriter("Viwer_Out.txt");
-        for (int iSample = 0; iSample < idx_out; iSample++) {
-            resultWriter.write(mOut[iSample][0]);
-            resultWriter.write(mOut[iSample][1]);
+        
+        if (this.writeAudio) {
+            // Write audio data to file
+            resultWriter = new ResultWriter("Viwer_Out.txt");
+            for (int iSample = 0; iSample < idx_out; iSample++) {
+                resultWriter.write(mOut[iSample][0]);
+                resultWriter.write(mOut[iSample][1]);
+            }
         }
-
+        
         double[][] tmp = new double[0][0];
 
         return tmp;

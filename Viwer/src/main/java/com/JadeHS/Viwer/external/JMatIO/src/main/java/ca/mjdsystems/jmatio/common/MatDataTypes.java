@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.common;
+package com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.common;
 
 /**
  * MAT-file data types

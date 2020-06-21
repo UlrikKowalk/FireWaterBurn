@@ -1,10 +1,10 @@
 /*
  * Copyright 2014 Matthew Dawson <matthew@mjdsystems.ca>
  */
-package com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
+package com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
 
 
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLArray;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.MLArray;
 import java.util.Arrays;
 
 /**

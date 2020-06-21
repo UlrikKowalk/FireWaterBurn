@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
+package com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -18,10 +18,10 @@ import java.security.PrivilegedAction;
 import java.util.*;
 import java.util.zip.InflaterInputStream;
 
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io.*;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io.MatFileWriter.ByteArrayOutputStream2;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.common.*;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.*;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io.*;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io.MatFileWriter.ByteArrayOutputStream2;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.common.*;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.*;
 
 /**
  * MAT-file reader. Reads MAT-file into <code>MLArray</code> objects.

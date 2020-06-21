@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 import java.io.BufferedReader;
 import java.io.File;

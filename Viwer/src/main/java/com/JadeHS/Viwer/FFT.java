@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 /******************************************************************************
  *  Compilation:  javac FFT.java

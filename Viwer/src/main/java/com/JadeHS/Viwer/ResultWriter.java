@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 import java.io.BufferedWriter;
 import java.io.File;

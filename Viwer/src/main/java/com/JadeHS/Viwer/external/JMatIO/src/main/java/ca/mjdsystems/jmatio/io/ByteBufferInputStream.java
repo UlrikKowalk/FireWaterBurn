@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
+package com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
 
 import java.io.IOException;
 import java.io.InputStream;

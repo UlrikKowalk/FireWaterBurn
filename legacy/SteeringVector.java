@@ -6,6 +6,7 @@ class SteeringVector {
     private int blocklen_half;
     private double[] frequencies;
     private double[][] coordinates;
+    private Array array;
 
     public SteeringVector(int sensors, int samplerate, int blocksize) {
 
@@ -20,14 +21,17 @@ class SteeringVector {
             this.frequencies[iFreq] = iFreq * samplerateDividedByBlocksize;
         }
         
-        establishCoordinates();
+        //this.array = new Array("MatrixVoice");
+        this.array = new Array("Boomerang");
+        this.coordinates = this.array.getCoordinates();
+        //establishCoordinates();
     }
 
     public double[][] getCoordinates() {
         return this.coordinates;
     }
 
-    private void establishCoordinates() {
+    /*private void establishCoordinates() {
 
         //Generate Coordinates for MatrixVoice Array
         
@@ -45,7 +49,7 @@ class SteeringVector {
             this.coordinates[iSensor][1] = Math.PI * Math.sin(omega) * 0.01f;
             this.coordinates[iSensor][2] = 0f;
         }
-    }
+    }*/
 
     public double[] calculateDelays(double theta) {
 
@@ -54,11 +58,11 @@ class SteeringVector {
         double[][] coords = new double[this.sensors][3];
 
         // Center coordinates around first entry
-        for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
+        /*for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
             coords[iSensor][0] = this.coordinates[iSensor][0] - this.coordinates[this.sensors - 1][0];
             coords[iSensor][1] = this.coordinates[iSensor][1] - this.coordinates[this.sensors - 1][1];
             coords[iSensor][2] = this.coordinates[iSensor][2] - this.coordinates[this.sensors - 1][2];
-        }
+        }*/
 
         double[] v_unit = new double[] { 1f, 0f, 0f };
         double[] delays = new double[sensors];

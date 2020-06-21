@@ -1,6 +1,6 @@
-package com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
+package com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io;
 
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.common.MatDataTypes;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.common.MatDataTypes;
 
 /**
  * 

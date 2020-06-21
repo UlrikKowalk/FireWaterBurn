@@ -1,7 +1,7 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 import java.io.File;
-import com.JadeHS.Viwer.WavFile.WavFile;
+import com.jadehs.viwer.wavfile.WavFile;
 
 
 class OpenWaveFile {

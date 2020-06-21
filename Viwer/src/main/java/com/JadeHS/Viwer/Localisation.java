@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 class Localisation {
 
@@ -15,20 +15,23 @@ class Localisation {
     private boolean firstBlock = true;
     private double[] theta;
     private SteeringVector steeringVector;
+    private int nPeakImportance = 3;
+    private boolean use_imaginary = true;
 
-    public Localisation(int sensors, int samplerate, int blocksize) {
+    public Localisation(int sensors, int samplerate, int blocksize, String arrayName) {
 
         this.sensors = sensors;
         this.blocksize = blocksize;
 
-        this.nLowerBin = 100;
+        //this.nLowerBin = 100;
+        this.nLowerBin = 55;
         this.blocksize_half = (int) (this.blocksize / 2 + 1);
         this.nUpperBin = this.blocksize_half;
         
         this.alpha = 0.4f;
         this.oneMinusAlpha = 1.0f - this.alpha;
 
-        double max_theta = 360;
+        double max_theta = 180;
         double step_theta = 10;
         this.num_theta = (int)(max_theta/step_theta);
 
@@ -41,14 +44,21 @@ class Localisation {
             idxTheta += step_theta;
         }
 
-        this.steeringVector = new SteeringVector(sensors, samplerate, blocksize);
-        this.mTheta = this.steeringVector.generateDelayTensor(this.theta);
+        this.steeringVector = new SteeringVector(sensors, samplerate, blocksize, arrayName);
+        this.mTheta = this.steeringVector.generateDelayTensor_DSB(this.theta);
 
         this.v_P_abs_sum = new double[this.num_theta];
 
         
 
         System.out.println("Theta: " + this.theta.length);
+
+        // Power summation over all (interesting) bins
+        if (this.use_imaginary) {
+            System.out.println("Using imaginary.");
+        } else {
+            System.out.println("Only using real valued.");
+        }
 
     }
 
@@ -154,8 +164,10 @@ class Localisation {
 
                         tmp[iRow].re += (eyeTimesTraceMinusPSD[iRow][iCol].re * vectorA[iCol][iBin].re - 
                                             eyeTimesTraceMinusPSD[iRow][iCol].im * vectorA[iCol][iBin].im); 
-                        //tmp[iRow].im += (eyeTimesTraceMinusPSD[iRow][iCol].im * vectorA[iCol][iBin].re + 
-                        //                    eyeTimesTraceMinusPSD[iRow][iCol].re * vectorA[iCol][iBin].im); 
+                        if (this.use_imaginary) {                    
+                            tmp[iRow].im += (eyeTimesTraceMinusPSD[iRow][iCol].im * vectorA[iCol][iBin].re + 
+                                                eyeTimesTraceMinusPSD[iRow][iCol].re * vectorA[iCol][iBin].im); 
+                        }
                     }
                 }
 
@@ -165,15 +177,20 @@ class Localisation {
 
                         tmp2.re += vectorA[iCol][iBin].re*tmp[iRow].re + 
                             vectorA[iCol][iBin].im*tmp[iRow].im;
-                        //tmp2.im += vectorA[iCol][iBin].re*tmp[iRow].im - 
-                        //    vectorA[iCol][iBin].im*tmp[iRow].re; 
+                        if (this.use_imaginary) {
+                            tmp2.im += vectorA[iCol][iBin].re*tmp[iRow].im - 
+                                vectorA[iCol][iBin].im*tmp[iRow].re; 
+                        }
 
                     }
                 }
 
                 // Power summation over all (interesting) bins
-                //nP += tmp2.abs();
-                nP += tmp2.re;
+                if (this.use_imaginary) {
+                    nP += tmp2.abs();
+                } else {
+                    nP += tmp2.re;
+                }
             }
             
             v_P_abs_sum[iTheta] = -1f / nP;
@@ -181,13 +198,13 @@ class Localisation {
         }
 
         // Loudness Normalization
-        double rms = Loudness.rms(v_P_abs_sum);
+        /*double rms = Loudness.rms(v_P_abs_sum);
         for (int iTheta = 0; iTheta < this.num_theta; iTheta++) {
             v_P_abs_sum[iTheta] /= rms;
-        }
+        }*/
 
         // Peak Picking
-        int[] vPeaks = FindPeaks.findPeaks(v_P_abs_sum);
+        int[] vPeaks = FindPeaks.findPeaks(v_P_abs_sum, nPeakImportance);
 
         // Quadratic Interpolation of Peak Positions
         double[][] mRealPeaks = QuadraticInterpolation.findRealPeaks(v_P_abs_sum, vPeaks);

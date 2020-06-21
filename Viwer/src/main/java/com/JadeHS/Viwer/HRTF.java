@@ -1,8 +1,8 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 import java.io.File;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io.*;
-import com.JadeHS.Viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.*;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.io.*;
+import com.jadehs.viwer.external.JMatIO.src.main.java.ca.mjdsystems.jmatio.types.*;
 
 
 class HRTF {

@@ -4,7 +4,7 @@ class TestClass {
 
     public static void main(String[] args) {
 
-        String filename = "media/0_recording_joined.wav";
+        String filename = "media/Boomerang.wav";
         OpenWaveFile wave = new OpenWaveFile(filename);
         wave.open();
 

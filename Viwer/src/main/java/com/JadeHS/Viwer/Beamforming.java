@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 class Beamforming {
 
@@ -9,16 +9,18 @@ class Beamforming {
     private double[][] coordinates;
     private SteeringVector steeringvetor;
     private HRTF hrtf;
+    private int num_theta_loc;
 
-    public Beamforming(int sensors, int samplerate, int blocksize, double[][] coordinates, int num_theta_loc) {
+    public Beamforming(int sensors, int samplerate, int blocksize, double[][] coordinates, int num_theta_loc, String arrayName) {
 
         this.sensors = sensors;
         this.samplerate = samplerate;
         this.blocksize = blocksize;
         this.fftlenHalf = (int) blocksize / 2 + 1;
         this.coordinates = coordinates;
+        this.num_theta_loc = num_theta_loc;
 
-        this.steeringvetor = new SteeringVector(this.sensors, this.samplerate, this.blocksize);
+        this.steeringvetor = new SteeringVector(this.sensors, this.samplerate, this.blocksize, arrayName);
 
         this.hrtf = new HRTF(num_theta_loc);
 
@@ -36,8 +38,11 @@ class Beamforming {
         for (int iDir = 0; iDir < directions.length; iDir++) {
 
             // Sensors, Bins, Real/Imag
-            double[][][] mTheta = this.steeringvetor.generateDelayTensor(directions[iDir]);
+            double[][][] mTheta = this.steeringvetor.generateDelayTensor_DSB(directions[iDir]);
             // Bin, L/R , Real/Imag
+            if (directions[iDir] < 0) {
+                directions[iDir] += this.num_theta_loc - 1;
+            }
             double[][][] hrtfCoefficients = this.hrtf.getHRTF(directions[iDir]);
             // Bins, Real/Imag
             double[][] monoSpec = new double[this.fftlenHalf][2];

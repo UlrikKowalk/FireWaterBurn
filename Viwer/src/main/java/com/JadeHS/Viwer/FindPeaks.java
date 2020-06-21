@@ -1,12 +1,18 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 class FindPeaks {
 
+    
     public static void main(String[] args) {
 
     }
 
     public static int[] findPeaks(double[] array) {
+        return findPeaks(array, 1);
+    }
+
+
+    public static int[] findPeaks(double[] array, int nPeakImportance) {
 
         // Only a maximum of N/2 peaks possible (+1 to account for truncation)
         int nProv = (array.length + 1) / 2;
@@ -50,9 +56,14 @@ class FindPeaks {
                 vAccu[nPeaks] = iIdx;
                 nPeaks++;
             } else if (array[iIdx] > array[iIdx-1] && array[iIdx] > array[iIdx+1]) {
-                vAccu[nPeaks] = iIdx;
-                nPeaks++;
+                if (iIdx > nPeakImportance-2 && array[iIdx] > array[iIdx-nPeakImportance] && iIdx < array.length-nPeakImportance && array[iIdx] > array[iIdx+nPeakImportance]) {
+                    vAccu[nPeaks] = iIdx;
+                    nPeaks++;
+                }
+                
             }
+
+            
         
         }
 

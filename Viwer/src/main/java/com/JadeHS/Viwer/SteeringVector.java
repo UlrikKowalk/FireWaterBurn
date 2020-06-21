@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer;
+package com.jadehs.viwer;
 
 class SteeringVector {
 
@@ -8,8 +8,9 @@ class SteeringVector {
     private int blocklen_half;
     private double[] frequencies;
     private double[][] coordinates;
+    private Array array;
 
-    public SteeringVector(int sensors, int samplerate, int blocksize) {
+    public SteeringVector(int sensors, int samplerate, int blocksize, String arrayName) {
 
         this.sensors = sensors;
         this.blocksize = blocksize;
@@ -22,31 +23,14 @@ class SteeringVector {
             this.frequencies[iFreq] = iFreq * samplerateDividedByBlocksize;
         }
         
-        establishCoordinates();
+        //this.array = new Array("MatrixVoice");
+        this.array = new Array(arrayName);
+        this.coordinates = this.array.getCoordinates();
+        //establishCoordinates();
     }
 
     public double[][] getCoordinates() {
         return this.coordinates;
-    }
-
-    private void establishCoordinates() {
-
-        //Generate Coordinates for MatrixVoice Array
-        
-        this.coordinates = new double[this.sensors][3];
-        double omega;
-
-        // Not necessary, just feels right
-        this.coordinates[0][0] = 0;
-        this.coordinates[0][1] = 0;
-        this.coordinates[0][2] = 0;
-
-        for (int iSensor = 1; iSensor < this.sensors; iSensor++) {
-            omega = -2f * Math.PI * (iSensor - 1) / (this.sensors - 1) - Math.PI;
-            this.coordinates[iSensor][0] = Math.PI * Math.cos(omega) * 0.01f;
-            this.coordinates[iSensor][1] = Math.PI * Math.sin(omega) * 0.01f;
-            this.coordinates[iSensor][2] = 0f;
-        }
     }
 
     public double[] calculateDelays(double theta) {
@@ -56,10 +40,15 @@ class SteeringVector {
         double[][] coords = new double[this.sensors][3];
 
         // Center coordinates around first entry
-        for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
+        /*for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
             coords[iSensor][0] = this.coordinates[iSensor][0] - this.coordinates[this.sensors - 1][0];
             coords[iSensor][1] = this.coordinates[iSensor][1] - this.coordinates[this.sensors - 1][1];
             coords[iSensor][2] = this.coordinates[iSensor][2] - this.coordinates[this.sensors - 1][2];
+        }*/
+        for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
+            coords[iSensor][0] = this.coordinates[iSensor][0];
+            coords[iSensor][1] = this.coordinates[iSensor][1];
+            coords[iSensor][2] = this.coordinates[iSensor][2];
         }
 
         double[] v_unit = new double[] { 1f, 0f, 0f };
@@ -67,15 +56,16 @@ class SteeringVector {
 
         for (int iSensor = 0; iSensor < sensors; iSensor++) {
 
-            delays[iSensor] = NaNtoZero(calculateNorm(coords[iSensor])
-                    * Math.cos(theta + vectorAngle(v_unit, coords[iSensor])) / SteeringVector.SPEED_OF_SOUND); 
-                           
+            //delays[iSensor] = NaNtoZero(calculateNorm(coords[iSensor])
+            //        * Math.cos(theta + vectorAngle(v_unit, coords[iSensor])) / SteeringVector.SPEED_OF_SOUND); 
+            delays[iSensor] = (coords[iSensor][0] * Math.sin(theta) + coords[iSensor][1] * Math.cos(theta)) / SteeringVector.SPEED_OF_SOUND;
+
         }
 
         return delays;
     }
 
-    public double[][][] generateDelayTensor(double theta) {
+    public double[][][] generateDelayTensor_DSB(double theta) {
         
         // Sensors, Bins, Real/Imag
         double[][][] mTheta = new double[this.sensors][blocklen_half][2];
@@ -95,14 +85,14 @@ class SteeringVector {
         return mTheta;
     }
 
-    public Complex[][][] generateDelayTensor(double[] theta) {
+    public Complex[][][] generateDelayTensor_DSB(double[] vTheta) {
         
-        Complex[][][] mTheta = new Complex[theta.length][this.sensors][blocklen_half];
+        Complex[][][] mTheta = new Complex[vTheta.length][this.sensors][blocklen_half];
         double[] v_tau_theta = new double[this.sensors];
 
-        for (int iTheta = 0; iTheta < theta.length; iTheta++) {
+        for (int iTheta = 0; iTheta < vTheta.length; iTheta++) {
             // Calculation of Delays
-            v_tau_theta = calculateDelays(theta[iTheta]);
+            v_tau_theta = calculateDelays(vTheta[iTheta]);
             
             // Creation of Steering Vector
             for (int iSensor = 0; iSensor < this.sensors; iSensor++) {
@@ -143,4 +133,19 @@ class SteeringVector {
             return number;
         }
     }
+
+    public double[][][] generateDelayTensor_MVDR(double theta) {
+
+        // Sensors, Bins, Real/Imag
+        double[][][] mTheta = new double[this.sensors][blocklen_half][2];
+        double[] v_tau_theta = new double[this.sensors];
+
+        
+
+
+        return mTheta;
+    }
+
+
+
 }

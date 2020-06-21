@@ -1,4 +1,4 @@
-package com.JadeHS.Viwer.WavFile;
+package com.jadehs.viwer.wavfile;
 
 public class WavFileException extends Exception
 {
